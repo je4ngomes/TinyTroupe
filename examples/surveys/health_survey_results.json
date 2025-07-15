@@ -1,0 +1,535 @@
+{
+  "ads": [
+    {
+      "id": "Premium_Vitamins",
+      "title": "Premium Multivitamin Complex",
+      "content": "\n\ud83c\udf1f COMPLETE WELLNESS SOLUTION \ud83c\udf1f\n\nVitaMax Pro - Premium Daily Nutrition\n\u2022 50+ Essential Vitamins & Minerals\n\u2022 Organic, Non-GMO Ingredients\n\u2022 Third-Party Lab Tested\n\u2022 Doctor Formulated\n\u2022 90-Day Supply\n\n$89/month (Subscribe & Save 25%)\nFDA-Approved Facility\n30-Day Money-Back Guarantee\n\n\"I feel more energetic than ever!\" - Sarah M. \u2b50\u2b50\u2b50\u2b50\u2b50\n"
+    },
+    {
+      "id": "Natural_Boost",
+      "title": "Natural Energy Booster",
+      "content": "\nPure Energy, Naturally\n\nGreenBoost Daily Energy Supplement\n- Organic green superfoods blend\n- Natural caffeine from green tea\n- No artificial stimulants\n- Supports mental clarity & focus\n- Vegan & gluten-free\n\nSpecial Offer: $34.99 (Normally $49.99)\nTry risk-free for 14 days\nJoin 10,000+ happy customers!\n"
+    },
+    {
+      "id": "Science_Advanced",
+      "title": "Advanced Scientific Formula",
+      "content": "\nBREAKTHROUGH NUTRITIONAL SCIENCE\n\nNutriScience Advanced Longevity Formula\n\u2192 Clinically proven ingredients\n\u2192 Anti-aging cellular support  \n\u2192 Cognitive enhancement blend\n\u2192 Metabolic optimization complex\n\u2192 Manufactured in USA\n\nInvestment in your health: $127/month\nSubscription includes free health coaching\nUsed by leading longevity researchers\n60-day satisfaction guarantee\n"
+    }
+  ],
+  "total_avatars": 6,
+  "individual_evaluations": [
+    {
+      "avatar": "User_2629",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_2629",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_2629 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2629",
+            "age": 47,
+            "occupation": "Teacher",
+            "income_level": "high",
+            "interests": [
+              "Social Media",
+              "Reading",
+              "Nature",
+              "Cooking",
+              "Health"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Outgoing",
+              "Curious"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_2629",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_2629 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2629",
+            "age": 47,
+            "occupation": "Teacher",
+            "income_level": "high",
+            "interests": [
+              "Social Media",
+              "Reading",
+              "Nature",
+              "Cooking",
+              "Health"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Outgoing",
+              "Curious"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_2629",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_2629 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2629",
+            "age": 47,
+            "occupation": "Teacher",
+            "income_level": "high",
+            "interests": [
+              "Social Media",
+              "Reading",
+              "Nature",
+              "Cooking",
+              "Health"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Outgoing",
+              "Curious"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "budget-conscious"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_2065",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_2065",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_2065 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2065",
+            "age": 59,
+            "occupation": "Doctor",
+            "income_level": "high",
+            "interests": [
+              "Finance",
+              "Technology",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Modern",
+              "Relaxed",
+              "Outgoing",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_2065",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_2065 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2065",
+            "age": 59,
+            "occupation": "Doctor",
+            "income_level": "high",
+            "interests": [
+              "Finance",
+              "Technology",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Modern",
+              "Relaxed",
+              "Outgoing",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_2065",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_2065 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2065",
+            "age": 59,
+            "occupation": "Doctor",
+            "income_level": "high",
+            "interests": [
+              "Finance",
+              "Technology",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Modern",
+              "Relaxed",
+              "Outgoing",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_8169",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_8169",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_8169 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8169",
+            "age": 40,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Music",
+              "Finance",
+              "Travel",
+              "Art",
+              "Sports",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Adventurous",
+              "Detail-oriented",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_8169",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_8169 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8169",
+            "age": 40,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Music",
+              "Finance",
+              "Travel",
+              "Art",
+              "Sports",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Adventurous",
+              "Detail-oriented",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_8169",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_8169 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8169",
+            "age": 40,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Music",
+              "Finance",
+              "Travel",
+              "Art",
+              "Sports",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Adventurous",
+              "Detail-oriented",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_3970",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_3970",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_3970 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3970",
+            "age": 48,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Sports",
+              "Cars",
+              "Fashion",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Adventurous",
+              "Traditional"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_3970",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_3970 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3970",
+            "age": 48,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Sports",
+              "Cars",
+              "Fashion",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Adventurous",
+              "Traditional"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_3970",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_3970 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3970",
+            "age": 48,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Sports",
+              "Cars",
+              "Fashion",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Adventurous",
+              "Traditional"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "impulse"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_8173",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_8173",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_8173 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8173",
+            "age": 43,
+            "occupation": "Software Engineer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Finance",
+              "Gardening",
+              "Technology",
+              "Nature",
+              "Health"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Modern"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_8173",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_8173 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8173",
+            "age": 43,
+            "occupation": "Software Engineer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Finance",
+              "Gardening",
+              "Technology",
+              "Nature",
+              "Health"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Modern"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_8173",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_8173 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8173",
+            "age": 43,
+            "occupation": "Software Engineer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Finance",
+              "Gardening",
+              "Technology",
+              "Nature",
+              "Health"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Modern"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "impulse"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_9062",
+      "evaluations": {
+        "Premium_Vitamins": {
+          "avatar_name": "User_9062",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_9062 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_9062",
+            "age": 55,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Technology",
+              "Music",
+              "Social Media",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Adventurous",
+              "Social",
+              "Cautious",
+              "Relaxed"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Natural_Boost": {
+          "avatar_name": "User_9062",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_9062 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_9062",
+            "age": 55,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Technology",
+              "Music",
+              "Social Media",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Adventurous",
+              "Social",
+              "Cautious",
+              "Relaxed"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Science_Advanced": {
+          "avatar_name": "User_9062",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_9062 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_9062",
+            "age": 55,
+            "occupation": "Writer",
+            "income_level": "high",
+            "interests": [
+              "Technology",
+              "Music",
+              "Social Media",
+              "Fitness"
+            ],
+            "personality_traits": [
+              "Adventurous",
+              "Social",
+              "Cautious",
+              "Relaxed"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "research-heavy"
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "Premium_Vitamins": {
+      "average_rating": 6.166666666666667,
+      "total_responses": 6,
+      "high_engagement": 2,
+      "low_engagement": 0
+    },
+    "Natural_Boost": {
+      "average_rating": 5.833333333333333,
+      "total_responses": 6,
+      "high_engagement": 3,
+      "low_engagement": 2
+    },
+    "Science_Advanced": {
+      "average_rating": 6.166666666666667,
+      "total_responses": 6,
+      "high_engagement": 2,
+      "low_engagement": 0
+    },
+    "winner": {
+      "ad_id": "Premium_Vitamins",
+      "average_rating": 6.166666666666667
+    }
+  }
+}

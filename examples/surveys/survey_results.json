@@ -1,0 +1,461 @@
+{
+  "ads": [
+    {
+      "id": "Ad_A",
+      "title": "Premium Fitness Tracker",
+      "content": "\n\ud83c\udfc3\u200d\u2640\ufe0f Transform Your Health Journey! \ud83c\udfc3\u200d\u2640\ufe0f\n\nNEW FitTrack Pro - Advanced Fitness Tracker\n\u2705 24/7 Heart Rate Monitoring\n\u2705 Sleep Quality Analysis  \n\u2705 30+ Workout Modes\n\u2705 7-Day Battery Life\n\nLimited Time: 40% OFF + FREE Shipping!\n$199 $119 - Order Now!\n\n\"Best fitness tracker I've ever used!\" \u2b50\u2b50\u2b50\u2b50\u2b50\n"
+    },
+    {
+      "id": "Ad_B",
+      "title": "Budget Fitness Watch",
+      "content": "\nSmart Fitness Watch - Affordable Health Tracking\n\nTrack your steps, heart rate, and sleep\nWater resistant design\nCompatible with all smartphones\n30-day money back guarantee\n\nOnly $39.99 - Free shipping on orders over $35\nGet yours today and start your fitness journey!\n"
+    },
+    {
+      "id": "Ad_C",
+      "title": "Luxury Health Monitor",
+      "content": "\nEliteHealth Pro - The Ultimate Wellness Companion\n\nProfessional-grade health monitoring\nFDA-approved sensors\nPersonalized AI coaching\nIntegration with healthcare providers\nPremium titanium construction\n\nInvestment in your health: $599\nFinancing available - $25/month\nTrusted by healthcare professionals worldwide\n"
+    }
+  ],
+  "total_avatars": 5,
+  "individual_evaluations": [
+    {
+      "avatar": "User_6546",
+      "evaluations": {
+        "Ad_A": {
+          "avatar_name": "User_6546",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_6546 - Rating: 6/10",
+          "avatar_demographics": {
+            "name": "User_6546",
+            "age": 44,
+            "occupation": "Artist",
+            "income_level": "high",
+            "interests": [
+              "Fitness",
+              "Cooking",
+              "Health",
+              "Reading",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Ad_B": {
+          "avatar_name": "User_6546",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_6546 - Rating: 4/10",
+          "avatar_demographics": {
+            "name": "User_6546",
+            "age": 44,
+            "occupation": "Artist",
+            "income_level": "high",
+            "interests": [
+              "Fitness",
+              "Cooking",
+              "Health",
+              "Reading",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Ad_C": {
+          "avatar_name": "User_6546",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_6546 - Rating: 7/10",
+          "avatar_demographics": {
+            "name": "User_6546",
+            "age": 44,
+            "occupation": "Artist",
+            "income_level": "high",
+            "interests": [
+              "Fitness",
+              "Cooking",
+              "Health",
+              "Reading",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_2280",
+      "evaluations": {
+        "Ad_A": {
+          "avatar_name": "User_2280",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_2280 - Rating: 6/10",
+          "avatar_demographics": {
+            "name": "User_2280",
+            "age": 54,
+            "occupation": "Marketing Manager",
+            "income_level": "high",
+            "interests": [
+              "Gardening",
+              "Sports",
+              "Travel",
+              "Cooking",
+              "Nature",
+              "Fitness",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Cautious",
+              "Curious",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Ad_B": {
+          "avatar_name": "User_2280",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_2280 - Rating: 7/10",
+          "avatar_demographics": {
+            "name": "User_2280",
+            "age": 54,
+            "occupation": "Marketing Manager",
+            "income_level": "high",
+            "interests": [
+              "Gardening",
+              "Sports",
+              "Travel",
+              "Cooking",
+              "Nature",
+              "Fitness",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Cautious",
+              "Curious",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Ad_C": {
+          "avatar_name": "User_2280",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_2280 - Rating: 6/10",
+          "avatar_demographics": {
+            "name": "User_2280",
+            "age": 54,
+            "occupation": "Marketing Manager",
+            "income_level": "high",
+            "interests": [
+              "Gardening",
+              "Sports",
+              "Travel",
+              "Cooking",
+              "Nature",
+              "Fitness",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Analytical",
+              "Cautious",
+              "Curious",
+              "Big-picture thinker"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_2790",
+      "evaluations": {
+        "Ad_A": {
+          "avatar_name": "User_2790",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_2790 - Rating: 8/10",
+          "avatar_demographics": {
+            "name": "User_2790",
+            "age": 31,
+            "occupation": "Accountant",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cooking",
+              "Gaming",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Relaxed",
+              "Practical",
+              "Creative",
+              "Analytical"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Ad_B": {
+          "avatar_name": "User_2790",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_2790 - Rating: 4/10",
+          "avatar_demographics": {
+            "name": "User_2790",
+            "age": 31,
+            "occupation": "Accountant",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cooking",
+              "Gaming",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Relaxed",
+              "Practical",
+              "Creative",
+              "Analytical"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Ad_C": {
+          "avatar_name": "User_2790",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_2790 - Rating: 7/10",
+          "avatar_demographics": {
+            "name": "User_2790",
+            "age": 31,
+            "occupation": "Accountant",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cooking",
+              "Gaming",
+              "Fitness",
+              "Health"
+            ],
+            "personality_traits": [
+              "Relaxed",
+              "Practical",
+              "Creative",
+              "Analytical"
+            ],
+            "tech_savviness": "low",
+            "shopping_behavior": "research-heavy"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_8760",
+      "evaluations": {
+        "Ad_A": {
+          "avatar_name": "User_8760",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_8760 - Rating: 8/10",
+          "avatar_demographics": {
+            "name": "User_8760",
+            "age": 37,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Cars",
+              "Movies",
+              "Social Media",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Ad_B": {
+          "avatar_name": "User_8760",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_8760 - Rating: 4/10",
+          "avatar_demographics": {
+            "name": "User_8760",
+            "age": 37,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Cars",
+              "Movies",
+              "Social Media",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Ad_C": {
+          "avatar_name": "User_8760",
+          "rating": 10,
+          "evaluation": "Mock evaluation from User_8760 - Rating: 10/10",
+          "avatar_demographics": {
+            "name": "User_8760",
+            "age": 37,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Nature",
+              "Cars",
+              "Movies",
+              "Social Media",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Generous",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_6212",
+      "evaluations": {
+        "Ad_A": {
+          "avatar_name": "User_6212",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_6212 - Rating: 8/10",
+          "avatar_demographics": {
+            "name": "User_6212",
+            "age": 45,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Reading",
+              "Art",
+              "Technology",
+              "Photography",
+              "Social Media",
+              "Health"
+            ],
+            "personality_traits": [
+              "Traditional",
+              "Relaxed",
+              "Creative",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Ad_B": {
+          "avatar_name": "User_6212",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_6212 - Rating: 5/10",
+          "avatar_demographics": {
+            "name": "User_6212",
+            "age": 45,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Reading",
+              "Art",
+              "Technology",
+              "Photography",
+              "Social Media",
+              "Health"
+            ],
+            "personality_traits": [
+              "Traditional",
+              "Relaxed",
+              "Creative",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Ad_C": {
+          "avatar_name": "User_6212",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_6212 - Rating: 4/10",
+          "avatar_demographics": {
+            "name": "User_6212",
+            "age": 45,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Reading",
+              "Art",
+              "Technology",
+              "Photography",
+              "Social Media",
+              "Health"
+            ],
+            "personality_traits": [
+              "Traditional",
+              "Relaxed",
+              "Creative",
+              "Family-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "Ad_A": {
+      "average_rating": 7.2,
+      "total_responses": 5,
+      "high_engagement": 3,
+      "low_engagement": 0
+    },
+    "Ad_B": {
+      "average_rating": 4.8,
+      "total_responses": 5,
+      "high_engagement": 1,
+      "low_engagement": 3
+    },
+    "Ad_C": {
+      "average_rating": 6.8,
+      "total_responses": 5,
+      "high_engagement": 3,
+      "low_engagement": 1
+    },
+    "winner": {
+      "ad_id": "Ad_A",
+      "average_rating": 7.2
+    }
+  }
+}

@@ -1,0 +1,677 @@
+{
+  "ads": [
+    {
+      "id": "Gaming_Pro",
+      "title": "High-Performance Gaming Laptop",
+      "content": "\n\ud83c\udfae ULTIMATE GAMING BEAST \ud83c\udfae\n\nROG Strix X17 - Dominate Every Game\n\u2022 Intel i9-13980HX Processor\n\u2022 RTX 4080 Graphics Card  \n\u2022 32GB DDR5 RAM\n\u2022 1TB NVMe SSD\n\u2022 17.3\" 360Hz Display\n\nWas $2,799 \u2192 NOW $2,299\nFREE RGB Gaming Mouse + Headset!\n\n\"Best gaming laptop I've ever owned!\" \u2b50\u2b50\u2b50\u2b50\u2b50\nOrder now - Limited stock!\n"
+    },
+    {
+      "id": "Gaming_Budget",
+      "title": "Affordable Gaming Laptop",
+      "content": "\nGaming Laptop - Great Performance, Great Price\n\nMSI GF63 Thin - Game On A Budget\n- Intel i5-12450H processor\n- GTX 1650 graphics\n- 16GB RAM, 512GB SSD\n- 15.6\" FHD display\n- Lightweight design\n\nOnly $699 (Reg. $899)\nPerfect for casual and competitive gaming\nFree shipping + 2 year warranty included\n"
+    },
+    {
+      "id": "Gaming_Content",
+      "title": "Creator Gaming Laptop",
+      "content": "\nALIENWARE x15 R2 - Game & Create\n\nPerfect for Gaming + Content Creation\n\u2713 Intel i7-12700H + RTX 4070\n\u2713 32GB RAM + 1TB SSD\n\u2713 15.6\" QHD 240Hz G-SYNC\n\u2713 Advanced cooling system\n\u2713 Customizable RGB lighting\n\nProfessional Performance: $2,199\n0% APR financing for 24 months\nUsed by top streamers and esports pros\n"
+    }
+  ],
+  "total_avatars": 8,
+  "individual_evaluations": [
+    {
+      "avatar": "User_6639",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_6639",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_6639 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_6639",
+            "age": 32,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Reading",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Adventurous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_6639",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_6639 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_6639",
+            "age": 32,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Reading",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Adventurous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_6639",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_6639 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_6639",
+            "age": 32,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Art",
+              "Reading",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Adventurous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_8442",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_8442",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_8442 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8442",
+            "age": 26,
+            "occupation": "Student",
+            "income_level": "high",
+            "interests": [
+              "Health",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Detail-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_8442",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_8442 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8442",
+            "age": 26,
+            "occupation": "Student",
+            "income_level": "high",
+            "interests": [
+              "Health",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Detail-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "impulse"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_8442",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_8442 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_8442",
+            "age": 26,
+            "occupation": "Student",
+            "income_level": "high",
+            "interests": [
+              "Health",
+              "Social Media",
+              "Cooking",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Detail-oriented"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "impulse"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_2492",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_2492",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_2492 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2492",
+            "age": 28,
+            "occupation": "Artist",
+            "income_level": "medium",
+            "interests": [
+              "Finance",
+              "Health",
+              "Photography",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Cautious"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_2492",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_2492 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2492",
+            "age": 28,
+            "occupation": "Artist",
+            "income_level": "medium",
+            "interests": [
+              "Finance",
+              "Health",
+              "Photography",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Cautious"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "research-heavy"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_2492",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_2492 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2492",
+            "age": 28,
+            "occupation": "Artist",
+            "income_level": "medium",
+            "interests": [
+              "Finance",
+              "Health",
+              "Photography",
+              "Gardening",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Social",
+              "Cautious"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "research-heavy"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_2580",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_2580",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_2580 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2580",
+            "age": 26,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Movies",
+              "Travel",
+              "Music",
+              "Fitness",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Curious",
+              "Creative",
+              "Generous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_2580",
+          "rating": 8,
+          "evaluation": "Mock evaluation from User_2580 - Rating: 8/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2580",
+            "age": 26,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Movies",
+              "Travel",
+              "Music",
+              "Fitness",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Curious",
+              "Creative",
+              "Generous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_2580",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_2580 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_2580",
+            "age": 26,
+            "occupation": "Software Engineer",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Movies",
+              "Travel",
+              "Music",
+              "Fitness",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Curious",
+              "Creative",
+              "Generous"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_1366",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_1366",
+          "rating": 6,
+          "evaluation": "Mock evaluation from User_1366 - Rating: 6/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_1366",
+            "age": 28,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cars",
+              "Reading",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Creative",
+              "Practical"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_1366",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_1366 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_1366",
+            "age": 28,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cars",
+              "Reading",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Creative",
+              "Practical"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_1366",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_1366 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_1366",
+            "age": 28,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Photography",
+              "Cars",
+              "Reading",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Creative",
+              "Practical"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_3598",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_3598",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_3598 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3598",
+            "age": 34,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Gardening",
+              "Finance",
+              "Cars",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Cautious",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_3598",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_3598 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3598",
+            "age": 34,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Gardening",
+              "Finance",
+              "Cars",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Cautious",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_3598",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_3598 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3598",
+            "age": 34,
+            "occupation": "Small Business Owner",
+            "income_level": "high",
+            "interests": [
+              "Movies",
+              "Gardening",
+              "Finance",
+              "Cars",
+              "Health",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Cautious",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "brand-loyal"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_3162",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_3162",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_3162 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3162",
+            "age": 37,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Movies",
+              "Finance",
+              "Photography",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Detail-oriented",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_3162",
+          "rating": 7,
+          "evaluation": "Mock evaluation from User_3162 - Rating: 7/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3162",
+            "age": 37,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Movies",
+              "Finance",
+              "Photography",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Detail-oriented",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_3162",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_3162 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_3162",
+            "age": 37,
+            "occupation": "Designer",
+            "income_level": "medium",
+            "interests": [
+              "Movies",
+              "Finance",
+              "Photography",
+              "Gaming"
+            ],
+            "personality_traits": [
+              "Detail-oriented",
+              "Creative"
+            ],
+            "tech_savviness": "medium",
+            "shopping_behavior": "budget-conscious"
+          }
+        }
+      }
+    },
+    {
+      "avatar": "User_5115",
+      "evaluations": {
+        "Gaming_Pro": {
+          "avatar_name": "User_5115",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_5115 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_5115",
+            "age": 25,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Music",
+              "Gardening",
+              "Art",
+              "Finance",
+              "Nature",
+              "Social Media",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Practical"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Budget": {
+          "avatar_name": "User_5115",
+          "rating": 4,
+          "evaluation": "Mock evaluation from User_5115 - Rating: 4/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_5115",
+            "age": 25,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Music",
+              "Gardening",
+              "Art",
+              "Finance",
+              "Nature",
+              "Social Media",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Practical"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        },
+        "Gaming_Content": {
+          "avatar_name": "User_5115",
+          "rating": 5,
+          "evaluation": "Mock evaluation from User_5115 - Rating: 5/10 (OpenAI not available)",
+          "avatar_demographics": {
+            "name": "User_5115",
+            "age": 25,
+            "occupation": "Retired",
+            "income_level": "medium",
+            "interests": [
+              "Music",
+              "Gardening",
+              "Art",
+              "Finance",
+              "Nature",
+              "Social Media",
+              "Technology"
+            ],
+            "personality_traits": [
+              "Family-oriented",
+              "Frugal",
+              "Practical"
+            ],
+            "tech_savviness": "high",
+            "shopping_behavior": "budget-conscious"
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "Gaming_Pro": {
+      "average_rating": 5.75,
+      "total_responses": 8,
+      "high_engagement": 3,
+      "low_engagement": 2
+    },
+    "Gaming_Budget": {
+      "average_rating": 6.125,
+      "total_responses": 8,
+      "high_engagement": 5,
+      "low_engagement": 3
+    },
+    "Gaming_Content": {
+      "average_rating": 5.125,
+      "total_responses": 8,
+      "high_engagement": 1,
+      "low_engagement": 2
+    },
+    "winner": {
+      "ad_id": "Gaming_Budget",
+      "average_rating": 6.125
+    }
+  }
+}
