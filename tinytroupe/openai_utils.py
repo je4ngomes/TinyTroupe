@@ -12,6 +12,7 @@ import tiktoken
 from tinytroupe import utils
 from tinytroupe.control import transactional
 from tinytroupe import default
+from tinytroupe import config_manager
 
 logger = logging.getLogger("tinytroupe")
 
@@ -53,23 +54,37 @@ class OpenAIClient:
         """
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("LLM_BASE_URL"))
 
+    @config_manager.config_defaults(
+        model="model",
+        temperature="temperature",
+        max_tokens="max_tokens",
+        top_p="top_p",
+        frequency_penalty="frequency_penalty",
+        presence_penalty="presence_penalty",
+        timeout="timeout",
+        max_attempts="max_attempts",
+        waiting_time="waiting_time",
+        exponential_backoff_factor="exponential_backoff_factor",
+        response_format=None,
+        echo=None
+    )
     def send_message(self,
                     current_messages,
                     dedent_messages=True,
-                     model=default["model"],
-                     temperature=default["temperature"],
-                     max_tokens=default["max_tokens"],
-                     top_p=default["top_p"],
-                     frequency_penalty=default["frequency_penalty"],
-                     presence_penalty=default["presence_penalty"],
-                     stop=[],
-                     timeout=default["timeout"],
-                     max_attempts=default["max_attempts"],
-                     waiting_time=default["waiting_time"],
-                     exponential_backoff_factor=default["exponential_backoff_factor"],
-                     n = 1,
-                     response_format=None,
-                     echo=False):
+                    model=None,
+                    temperature=None,
+                    max_tokens=None,
+                    top_p=None,
+                    frequency_penalty=None,
+                    presence_penalty=None,
+                    stop=[],
+                    timeout=None,
+                    max_attempts=None,
+                    waiting_time=None,
+                    exponential_backoff_factor=None,
+                    n = 1,
+                    response_format=None,
+                    echo=False):
         """
         Sends a message to the OpenAI API and returns the response.
 
@@ -197,6 +212,7 @@ class OpenAIClient:
                 
             except Exception as e:
                 logger.error(f"[{i}] {type(e).__name__} Error: {e}")
+                aux_exponential_backoff()
 
         logger.error(f"Failed to get response after {max_attempts} attempts.")
         return None
@@ -232,6 +248,8 @@ class OpenAIClient:
                 del chat_api_params["stream"]
 
             logger.info(f"Calling LLM model (using .parse too) with these parameters: {logged_params}. Not showing 'messages' parameter.")
+            # complete message
+            logger.debug(f"   --> Complete messages sent to LLM: {chat_api_params['messages']}")
             return self.client.beta.chat.completions.parse(
                     **chat_api_params
                 )
