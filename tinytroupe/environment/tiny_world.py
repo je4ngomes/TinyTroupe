@@ -858,6 +858,42 @@ class TinyWorld:
         else:
             return None
     
+    def save_to_file(self, filepath: str, include_state: bool = False, include_interactions: bool = True, include_communications: bool = True):
+        """
+        Saves the world data to a file for later use.
+        
+        Args:
+            filepath (str): The path to save the data to.
+            include_state (bool): Whether to include the complete world state.
+            include_interactions (bool): Whether to include agent interactions history.
+            include_communications (bool): Whether to include communications buffer.
+        """
+        import json
+        from datetime import datetime
+        
+        data = {
+            "saved_at": datetime.now().isoformat(),
+            "world_name": self.name,
+        }
+        
+        if include_state:
+            data["complete_state"] = self.encode_complete_state()
+            
+        if include_interactions:
+            data["interactions"] = self.pretty_current_interactions(
+                simplified=True,
+                skip_system=True,
+                max_content_length=None
+            )
+            
+        if include_communications:
+            data["communications"] = self._displayed_communications_buffer.copy()
+        
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        print(f"World data saved to {filepath}")
+
     @staticmethod
     def clear_environments():
         """
