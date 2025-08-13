@@ -12,7 +12,6 @@ import tinytroupe.control as control
 from tinytroupe.control import transactional
 from tinytroupe import utils
 from tinytroupe import config_manager
- 
 from rich.console import Console
 
 from typing import Any, TypeVar, Union
@@ -65,6 +64,9 @@ class TinyWorld:
         # the buffer of communications that have been displayed so far, used for
         # saving these communications to another output form later (e.g., caching)
         self._displayed_communications_buffer = []
+
+        # persistent storage of all communications (never cleared automatically)
+        self._communications_history = []
 
         # a temporary buffer for communications target to make rendering easier
         self._target_display_communications_buffer = []
@@ -670,6 +672,7 @@ class TinyWorld:
 
 
         self._displayed_communications_buffer.append(communication)
+        self._communications_history.append(communication)
         self._display(communication)
 
     def pop_and_display_latest_communications(self):
@@ -682,7 +685,7 @@ class TinyWorld:
         for communication in communications:
             self._display(communication)
 
-        return communications    
+        return communications
 
     def _display(self, communication:dict):
         # unpack the rendering to find more info
@@ -888,7 +891,8 @@ class TinyWorld:
             )
             
         if include_communications:
-            data["communications"] = self._displayed_communications_buffer.copy()
+            # Use the persistent communications history instead of the display buffer
+            data["communications"] = self._communications_history
         
         return data
 
