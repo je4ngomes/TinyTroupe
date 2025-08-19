@@ -32,7 +32,8 @@ class TinyWorld:
                  initial_datetime=datetime.now(),
                  interventions=[],
                  broadcast_if_no_target=True,
-                 max_additional_targets_to_display=3):
+                 max_additional_targets_to_display=3,
+                 connector=None):
         """
         Initializes an environment.
 
@@ -45,6 +46,7 @@ class TinyWorld:
             broadcast_if_no_target (bool): If True, broadcast actions if the target of an action is not found.
             max_additional_targets_to_display (int): The maximum number of additional targets to display in a communication. If None, 
                 all additional targets are displayed.
+            default_connector: Optional default data connector for saving/loading world data.
         """
 
         if name is not None:
@@ -65,8 +67,6 @@ class TinyWorld:
         # saving these communications to another output form later (e.g., caching)
         self._displayed_communications_buffer = []
 
-        # persistent storage of all communications (never cleared automatically)
-        self._communications_history = []
 
         # a temporary buffer for communications target to make rendering easier
         self._target_display_communications_buffer = []
@@ -78,6 +78,9 @@ class TinyWorld:
         TinyWorld.add_environment(self)
         
         self.add_agents(agents)
+
+        # Default connector for saving/loading world data
+        self._connector = connector
         
     #######################################################################
     # Simulation control methods
@@ -116,8 +119,27 @@ class TinyWorld:
         if parallelize:
             agents_actions = self._step_in_parallel(timedelta_per_step=timedelta_per_step)
         else:
-            agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step, 
+            agents_actions = self._step_sequentially(timedelta_per_step=timelta_per_step, 
                                                  randomize_agents_order=randomize_agents_order)
+        
+        # Handle auto-save if configured
+        if hasattr(self, '_auto_save_connector'):
+            self._auto_save_step_counter += 1
+            if self._auto_save_step_counter >= self._auto_save_interval:
+                try:
+                    # Generate auto-save destination name with step count
+                    auto_destination = f"auto_save_step_{self._auto_save_step_counter}"
+                    success = self.save_to_connector(
+                        self._auto_save_connector,
+                        destination=auto_destination,
+                        include_state=self._auto_save_include_state,
+                        **self._auto_save_kwargs
+                    )
+                    if success:
+                        logger.debug(f"Auto-saved world data at step {self._auto_save_step_counter}")
+                    self._auto_save_step_counter = 0  # Reset counter
+                except Exception as e:
+                    logger.error(f"Auto-save failed at step {self._auto_save_step_counter}: {e}")
         
         return agents_actions
         
@@ -672,7 +694,12 @@ class TinyWorld:
 
 
         self._displayed_communications_buffer.append(communication)
-        self._communications_history.append(communication)
+        
+        # Only store in persistent history if explicitly enabled
+        
+        # Handle streaming if enabled
+        self._handle_communications_streaming(communication)
+        
         self._display(communication)
 
     def pop_and_display_latest_communications(self):
@@ -704,6 +731,101 @@ class TinyWorld:
         Cleans the communications buffer.
         """
         self._displayed_communications_buffer = []
+
+    
+    
+    def stream_communications_to_connector(self, connector, 
+                                         stream_interval: int = 1,
+                                         batch_size: int = 10):
+        """
+        Enable streaming of communications to an external connector.
+        
+        This provides a memory-efficient alternative to storing communications
+        in memory by streaming them to external storage as they occur.
+        
+        Args:
+            connector: A TinyStreamingDataConnector instance
+            stream_interval (int): Stream after every N communications
+            batch_size (int): Number of communications to batch together
+        """
+        if not hasattr(connector, 'stream_world_data'):
+            logger.error("Connector must support streaming (inherit from TinyStreamingDataConnector)")
+            return False
+        
+        self._communications_stream_connector = connector
+        self._communications_stream_interval = stream_interval
+        self._communications_stream_batch_size = batch_size
+        self._communications_stream_buffer = []
+        self._communications_stream_counter = 0
+        
+        # Start streaming mode on the connector
+        connector.start_streaming(destination=f"communications_stream_{self.name}")
+        
+        logger.info(f"Enabled communications streaming to {connector.name} "
+                   f"(interval: {stream_interval}, batch: {batch_size})")
+        return True
+    
+    def disable_communications_streaming(self):
+        """
+        Disable communications streaming and flush any remaining data.
+        """
+        if hasattr(self, '_communications_stream_connector'):
+            # Flush any remaining communications
+            if self._communications_stream_buffer:
+                self._flush_communications_stream()
+            
+            # Stop streaming
+            self._communications_stream_connector.stop_streaming()
+            
+            logger.info(f"Disabled communications streaming to {self._communications_stream_connector.name}")
+            
+            # Clean up attributes
+            delattr(self, '_communications_stream_connector')
+            delattr(self, '_communications_stream_interval')
+            delattr(self, '_communications_stream_batch_size')
+            delattr(self, '_communications_stream_buffer')
+            delattr(self, '_communications_stream_counter')
+    
+    def _flush_communications_stream(self):
+        """
+        Flush pending communications to the stream connector.
+        """
+        if hasattr(self, '_communications_stream_connector') and self._communications_stream_buffer:
+            try:
+                stream_data = {
+                    "world_name": self.name,
+                    "stream_type": "communications",
+                    "timestamp": datetime.now().isoformat(),
+                    "communications": self._communications_stream_buffer,
+                    "batch_size": len(self._communications_stream_buffer)
+                }
+                
+                success = self._communications_stream_connector.stream_world_data(stream_data)
+                if success:
+                    logger.debug(f"Streamed {len(self._communications_stream_buffer)} communications")
+                
+                self._communications_stream_buffer = []
+                
+            except Exception as e:
+                logger.error(f"Error streaming communications: {e}")
+                
+    def _handle_communications_streaming(self, communication):
+        """
+        Handle streaming of a new communication.
+        """
+        if hasattr(self, '_communications_stream_connector'):
+            self._communications_stream_buffer.append(communication)
+            self._communications_stream_counter += 1
+            
+            # Check if we should flush based on interval or batch size
+            should_flush = (
+                self._communications_stream_counter >= self._communications_stream_interval or
+                len(self._communications_stream_buffer) >= self._communications_stream_batch_size
+            )
+            
+            if should_flush:
+                self._flush_communications_stream()
+                self._communications_stream_counter = 0
 
     def __repr__(self):
         return f"TinyWorld(name='{self.name}')"
@@ -753,24 +875,27 @@ class TinyWorld:
       return "\n".join(agent_contents)
     
     #######################################################################
-    # IO
+    # IO (default behavior preserved)
     #######################################################################
 
     def encode_complete_state(self) -> dict:
         """
-        Encodes the complete state of the environment in a dictionary.
+        Encodes the complete state of the environment.
 
         Returns:
             dict: A dictionary encoding the complete state of the environment.
         """
         to_copy = copy.copy(self.__dict__)
 
-        # remove the logger and other fields
+        # Remove non-serializable and runtime-only fields
         del to_copy['console']
         del to_copy['agents']
         del to_copy['name_to_agent']
         del to_copy['current_datetime']
         del to_copy['_interventions'] # TODO: encode interventions
+        del to_copy['_connector']
+
+        # If more non-serializable fields are added in the future, exclude them here.
 
         state = copy.deepcopy(to_copy)
 
@@ -891,10 +1016,162 @@ class TinyWorld:
             )
             
         if include_communications:
-            # Use the persistent communications history instead of the display buffer
-            data["communications"] = self._communications_history
+            # Use the displayed communications buffer for recent communications
+            data["communications"] = self._displayed_communications_buffer
         
         return data
+    
+    def save_to_connector(self, destination: str = None, 
+                         include_state: bool = False, 
+                         include_interactions: bool = True, 
+                         include_communications: bool = True,
+                         **kwargs) -> bool:
+        """
+        Save world data using an external data connector.
+        
+        Args:
+            Uses the default_connector set in the constructor.
+            destination (str): Optional destination identifier for the connector
+            include_state (bool): Whether to include the complete world state
+            include_interactions (bool): Whether to include agent interactions history
+            include_communications (bool): Whether to include communications history
+            **kwargs: Additional parameters passed to the connector
+            
+        Returns:
+            bool: True if save was successful, False otherwise
+        """
+        conn = self._connector
+        try:
+            # Get world data
+            world_data = self.get_world_data(
+                include_state=include_state,
+                include_interactions=include_interactions, 
+                include_communications=include_communications
+            )
+            # Use only the default_connector
+            if conn is None:
+                logger.error("No default_connector set on TinyWorld.")
+                return False
+            success = conn.save_world_data(world_data, destination, **kwargs)
+            if success:
+                logger.info(f"Successfully saved world '{self.name}' using {conn.name}")
+            else:
+                logger.error(f"Failed to save world '{self.name}' using {conn.name}")
+            return success
+        except Exception as e:
+            logger.error(f"Error saving world data with connector {getattr(conn, 'name', repr(conn))}: {e}")
+            return False
+    
+    def load_from_connector(self, source: str = None, 
+                           restore_state: bool = False,
+                           **kwargs) -> bool:
+        """
+        Load world data using an external data connector.
+        
+        Args:
+            Uses the default_connector set in the constructor.
+            source (str): Optional source identifier for the connector  
+            restore_state (bool): Whether to restore the complete world state (experimental)
+            **kwargs: Additional parameters passed to the connector
+            
+        Returns:
+            bool: True if load was successful, False otherwise
+        """
+        # Use only the default_connector
+        conn = self._connector
+        try:
+
+            if conn is None:
+                logger.error("No default_connector set on TinyWorld.")
+                return False
+            world_data = conn.load_world_data(source, **kwargs)
+            if world_data is None:
+                logger.error(f"Failed to load world data using {conn.name}")
+                return False
+            # Restore basic information
+            logger.info(f"Loaded world data for '{world_data.get('world_name', 'unknown')}' "
+                       f"saved at {world_data.get('saved_at', 'unknown')}")
+            # Optionally restore complete state (experimental)
+            if restore_state and "complete_state" in world_data:
+                logger.warning("Restoring complete world state is experimental and may not work correctly")
+                try:
+                    self.decode_complete_state(world_data["complete_state"])
+                    logger.info("Successfully restored world state from connector data")
+                except Exception as e:
+                    logger.error(f"Failed to restore world state: {e}")
+                    return False
+            # Restore communications if available
+            if "communications" in world_data:
+                self._displayed_communications_buffer = world_data["communications"][-100:]  # Keep last 100
+                logger.info(f"Restored {len(self._displayed_communications_buffer)} recent communications to display buffer")
+            logger.info(f"Successfully loaded world data using {conn.name}")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading world data with connector {getattr(conn, 'name', repr(conn))}: {e}")
+            return False
+    
+    def auto_save_to_connector(self, save_interval: int = 10, 
+                              include_state: bool = False,
+                              **kwargs):
+        """
+        Enable automatic saving to a connector after simulation steps.
+        
+        This method sets up the world to automatically save data to the specified
+        connector every N simulation steps.
+        
+        Args:
+            Uses the default_connector set in the constructor.
+            save_interval (int): Number of steps between automatic saves
+            include_state (bool): Whether to include complete state in auto-saves
+            **kwargs: Additional parameters for the connector
+        """
+        # Use only the default_connector
+        conn = self._connector
+        if conn is None:
+            logger.error("No default_connector set on TinyWorld for auto-save.")
+            return
+        self._auto_save_connector = conn
+        self._auto_save_interval = save_interval
+        self._auto_save_include_state = include_state
+        self._auto_save_kwargs = kwargs
+        self._auto_save_step_counter = 0
+        logger.info(f"Enabled auto-save to {conn.name} every {save_interval} steps")
+    
+    def disable_auto_save(self):
+        """
+        Disable automatic saving to connector.
+        """
+        if hasattr(self, '_auto_save_connector'):
+            logger.info(f"Disabled auto-save to {self._auto_save_connector.name}")
+            delattr(self, '_auto_save_connector')
+            delattr(self, '_auto_save_interval') 
+            delattr(self, '_auto_save_include_state')
+            delattr(self, '_auto_save_kwargs')
+            delattr(self, '_auto_save_step_counter')
+    
+    def cleanup_connectors(self):
+        """
+        Clean up all active connectors and streaming.
+        Call this before destroying a world or at the end of a simulation.
+        """
+        cleanup_actions = []
+        
+        # Disable auto-save
+        if hasattr(self, '_auto_save_connector'):
+            self.disable_auto_save()
+            cleanup_actions.append("auto-save")
+        
+        # Disable communications streaming
+        if hasattr(self, '_communications_stream_connector'):
+            self.disable_communications_streaming()
+            cleanup_actions.append("communications streaming")
+        
+
+        
+        if cleanup_actions:
+            logger.info(f"Cleaned up connectors: {', '.join(cleanup_actions)}")
+        
+        return len(cleanup_actions)
 
     @staticmethod
     def clear_environments():
@@ -902,3 +1179,19 @@ class TinyWorld:
         Clears the list of all environments.
         """
         TinyWorld.all_environments = {}
+
+
+    def get_slim_complete_state(self) -> dict:
+        """
+        Build a lightweight, serialization-safe snapshot of the world.
+        This avoids deep-copying self.__dict__ and only includes fields that
+        decode_complete_state() actually restores.
+        """
+        return {
+            "name": self.name,
+            "simulation_id": self.simulation_id,
+            "broadcast_if_no_target": self.broadcast_if_no_target,
+            "_max_additional_targets_to_display": getattr(self, "_max_additional_targets_to_display", 3),
+            "current_datetime": self.current_datetime.isoformat(),
+            "agents": [agent.encode_complete_state() for agent in self.agents],
+        }
