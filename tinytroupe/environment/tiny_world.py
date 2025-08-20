@@ -1195,3 +1195,41 @@ class TinyWorld:
             "current_datetime": self.current_datetime.isoformat(),
             "agents": [agent.encode_complete_state() for agent in self.agents],
         }
+        
+    def reset_generated_world_data(self, reset_time: datetime | None = None, persist: bool = True):
+        """
+        Clears generated data but keeps the world and its agents.
+        If auto-save is enabled, also registers this reset as a save event.
+        """
+        if reset_time:
+            self.current_datetime = reset_time
+
+        # --- world cleanup ---
+        self.clear_communications_buffer()
+        self._communications_stream_buffer = []
+        self._communications_stream_counter = 0
+        self._auto_save_step_counter = 0
+
+        # --- agent cleanup ---
+        for agent in self.agents:
+            agent.clear_communications_buffer()
+            agent.clear_episodic_memory()
+            agent._current_episode_event_count = 0
+            agent.actions_count = 0
+            agent.stimuli_count = 0
+            agent.pop_latest_actions()
+            agent.reset_prompt()
+
+        # --- register reset if auto-save is enabled ---
+        if persist and hasattr(self, "_auto_save_connector"):
+            try:
+                success = self.save_to_connector(
+                    destination=f"reset_at_{datetime.now().isoformat()}",
+                    include_state=True,           # full clean state snapshot
+                    include_interactions=False,   # nothing to keep
+                    include_communications=False  # just cleared
+                )
+                if success:
+                    logger.info(f"[{self.name}] Reset event registered with connector.")
+            except Exception as e:
+                logger.error(f"[{self.name}] Failed to persist reset: {e}")
