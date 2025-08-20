@@ -119,7 +119,7 @@ class TinyWorld:
         if parallelize:
             agents_actions = self._step_in_parallel(timedelta_per_step=timedelta_per_step)
         else:
-            agents_actions = self._step_sequentially(timedelta_per_step=timelta_per_step, 
+            agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step, 
                                                  randomize_agents_order=randomize_agents_order)
         
         # Handle auto-save if configured
