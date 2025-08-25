@@ -43,6 +43,11 @@ class ConfigManager:
         
         self._config["model"] = config["OpenAI"].get("MODEL", "gpt-4o")
         self._config["embedding_model"] = config["OpenAI"].get("EMBEDDING_MODEL", "text-embedding-3-small")
+
+        # NEW: HuggingFace embedding configs
+        self._config["huggingface_embedding_model"] = config["OpenAI"].get("HF_EMBEDDING_MODEL", "BAAI/bge-m3")
+        self._config["use_hf_embeddings"] = config["OpenAI"].getboolean("USE_HF_EMBEDDINGS", False)
+
         if config["OpenAI"].get("API_TYPE") == "azure":
             self._config["azure_embedding_model_api_version"] = config["OpenAI"].get("AZURE_EMBEDDING_MODEL_API_VERSION", "2023-05-15")
         self._config["reasoning_model"] = config["OpenAI"].get("REASONING_MODEL", "o3-mini")
@@ -200,9 +205,6 @@ utils.start_logger(config)
 
 config_manager = ConfigManager()
 
-
-
-
 # For backwards compatibility, maintain the default dict
 # but it's recommended to use config_manager instead
 default = config_manager._config
@@ -226,31 +228,27 @@ def get_config(key, override_value=None):
 
 
 ## LLaMa-Index configs ########################################################
-#from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-
-if config["OpenAI"].get("API_TYPE") == "azure":
-    from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
-else:
-    from llama_index.embeddings.openai import OpenAIEmbedding
-
 from llama_index.core import Settings, Document, VectorStoreIndex, SimpleDirectoryReader
 from llama_index.readers.web import SimpleWebPageReader
 
+api_type = config["OpenAI"].get("API_TYPE", "").lower()
+use_hf_embeddings = config["OpenAI"].getboolean("USE_HF_EMBEDDINGS", False)
+hf_model_name = config["OpenAI"].get("HF_EMBEDDING_MODEL", "BAAI/bge-m3")
 
-# this will be cached locally by llama-index, in a OS-dependend location
-
-##Settings.embed_model = HuggingFaceEmbedding(
-##    model_name="BAAI/bge-small-en-v1.5"
-##)
-
-if config["OpenAI"].get("API_TYPE") == "azure":
-    llamaindex_openai_embed_model = AzureOpenAIEmbedding(model=default["embedding_model"],
-                                                        deployment_name=default["embedding_model"],
-                                                        api_version=default["azure_embedding_model_api_version"],
-                                                        embed_batch_size=10)
+if use_hf_embeddings:
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    llamaindex_embed_model = HuggingFaceEmbedding(model_name=hf_model_name)
+elif api_type == "azure":
+    from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
+    llamaindex_embed_model = AzureOpenAIEmbedding(model=default["embedding_model"],
+                                                  deployment_name=default["embedding_model"],
+                                                  api_version=default["azure_embedding_model_api_version"],
+                                                  embed_batch_size=10)
 else:
-    llamaindex_openai_embed_model = OpenAIEmbedding(model=default["embedding_model"], embed_batch_size=10)
-Settings.embed_model = llamaindex_openai_embed_model
+    from llama_index.embeddings.openai import OpenAIEmbedding
+    llamaindex_embed_model = OpenAIEmbedding(model=default["embedding_model"], embed_batch_size=10)
+
+Settings.embed_model = llamaindex_embed_model
 
 
 ###########################################################################
@@ -260,5 +258,3 @@ Settings.embed_model = llamaindex_openai_embed_model
 # fix an issue in the rich library: we don't want margins in Jupyter!
 rich.jupyter.JUPYTER_HTML_FORMAT = \
     utils.inject_html_css_style_prefix(rich.jupyter.JUPYTER_HTML_FORMAT, "margin:0px;")
-
-
