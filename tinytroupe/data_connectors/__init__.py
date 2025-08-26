@@ -1,1 +1,1 @@
-from .base_connector import TinyDataConnector
+from .base_connector import TinyDataConnector, TinyBatchDataConnector, TinyStreamingDataConnector
