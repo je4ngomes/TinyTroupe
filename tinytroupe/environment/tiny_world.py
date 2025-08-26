@@ -32,8 +32,7 @@ class TinyWorld:
                  initial_datetime=datetime.now(),
                  interventions=[],
                  broadcast_if_no_target=True,
-                 max_additional_targets_to_display=3,
-                 connector=None):
+                 max_additional_targets_to_display=3):
         """
         Initializes an environment.
 
@@ -79,8 +78,9 @@ class TinyWorld:
         
         self.add_agents(agents)
 
-        # Default connector for saving/loading world data
-        self._connector = connector
+        # --- Connectors ---
+        self._connector = None
+        self._communications_stream_connector = None
         
     #######################################################################
     # Simulation control methods
@@ -731,39 +731,6 @@ class TinyWorld:
         Cleans the communications buffer.
         """
         self._displayed_communications_buffer = []
-
-    
-    
-    def stream_communications_to_connector(self, connector, 
-                                         stream_interval: int = 1,
-                                         batch_size: int = 10):
-        """
-        Enable streaming of communications to an external connector.
-        
-        This provides a memory-efficient alternative to storing communications
-        in memory by streaming them to external storage as they occur.
-        
-        Args:
-            connector: A TinyStreamingDataConnector instance
-            stream_interval (int): Stream after every N communications
-            batch_size (int): Number of communications to batch together
-        """
-        if not hasattr(connector, 'stream_world_data'):
-            logger.error("Connector must support streaming (inherit from TinyStreamingDataConnector)")
-            return False
-        
-        self._communications_stream_connector = connector
-        self._communications_stream_interval = stream_interval
-        self._communications_stream_batch_size = batch_size
-        self._communications_stream_buffer = []
-        self._communications_stream_counter = 0
-        
-        # Start streaming mode on the connector
-        connector.start_streaming(destination=f"communications_stream_{self.name}")
-        
-        logger.info(f"Enabled communications streaming to {connector.name} "
-                   f"(interval: {stream_interval}, batch: {batch_size})")
-        return True
     
     def disable_communications_streaming(self):
         """
@@ -946,6 +913,31 @@ class TinyWorld:
         self.__dict__.update(state)
 
         return self
+
+    def add_data_connector(self, connector):
+        """
+        Attach a persistence data connector to the world.
+        """
+        self._connector = connector
+        logger.info(f"[{self.name}] Data connector {getattr(connector, 'name', repr(connector))} added.")
+        
+
+    def add_streaming_connector(self, streaming_connector, stream_interval: int = 1, stream_batch_size: int = 10):
+        """
+        Attach and configure a streaming connector.
+        """
+        if not hasattr(streaming_connector, "stream_world_data"):
+            raise ValueError("Streaming connector must implement stream_world_data()")
+        
+        self._communications_stream_connector = streaming_connector
+        self._communications_stream_interval = stream_interval
+        self._communications_stream_batch_size = stream_batch_size
+        self._communications_stream_buffer = []
+        self._communications_stream_counter = 0
+        
+        self._communications_stream_connector.start_streaming(destination=f"communications_stream_{self.name}")
+        logger.info(f"[{self.name}] Streaming enabled via {streaming_connector.name} "
+                    f"(interval={stream_interval}, batch={stream_batch_size})")
 
     @staticmethod
     def add_environment(environment):
