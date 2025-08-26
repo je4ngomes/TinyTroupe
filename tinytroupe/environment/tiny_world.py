@@ -935,7 +935,7 @@ class TinyWorld:
         self._communications_stream_buffer = []
         self._communications_stream_counter = 0
         
-        self._communications_stream_connector.start_streaming(destination=f"communications_stream_{self.name}")
+        self._communications_stream_connector.start_streaming()
         logger.info(f"[{self.name}] Streaming enabled via {streaming_connector.name} "
                     f"(interval={stream_interval}, batch={stream_batch_size})")
 

@@ -214,12 +214,11 @@ class TinyStreamingDataConnector(TinyDataConnector):
     """
     
     @abstractmethod
-    def start_streaming(self, destination: str = None, **kwargs) -> bool:
+    def start_streaming(self, **kwargs) -> bool:
         """
-        Start streaming world data to the destination.
+        Start streaming world data.
         
         Args:
-            destination (str): Stream destination identifier
             **kwargs: Additional streaming parameters
             
         Returns:
