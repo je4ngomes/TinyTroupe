@@ -207,10 +207,9 @@ class TinyBatchDataConnector(TinyDataConnector):
         pass
 
 
-class TinyStreamingDataConnector(TinyDataConnector):
+class TinyStreamingDataConnector:
     """
-    Extension of TinyDataConnector that supports streaming/real-time
-    data operations for continuous world data export.
+    Connector for streaming world data in real-time.
     """
     
     @abstractmethod
