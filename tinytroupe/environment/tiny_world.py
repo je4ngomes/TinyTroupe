@@ -862,6 +862,7 @@ class TinyWorld:
         del to_copy['current_datetime']
         del to_copy['_interventions'] # TODO: encode interventions
         del to_copy['_connector']
+        del to_copy['_communications_stream_connector']
 
         # If more non-serializable fields are added in the future, exclude them here.
 
