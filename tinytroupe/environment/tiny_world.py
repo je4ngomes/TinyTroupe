@@ -12,9 +12,10 @@ import tinytroupe.control as control
 from tinytroupe.control import transactional
 from tinytroupe import utils
 from tinytroupe import config_manager
+from tinytroupe.data_connectors import TinyStreamingDataConnector
 from rich.console import Console
 
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar, Union, Optional
 AgentOrWorld = Union["TinyPerson", "TinyWorld"]
 
 class TinyWorld:
@@ -938,6 +939,12 @@ class TinyWorld:
         self._communications_stream_connector.start_streaming()
         logger.info(f"[{self.name}] Streaming enabled via {streaming_connector.name} "
                     f"(interval={stream_interval}, batch={stream_batch_size})")
+
+    def get_streaming_connector(self) -> Optional[TinyStreamingDataConnector]:
+        """
+        Return the streaming connector for this world, or None if not configured.
+        """
+        return getattr(self, "_communications_stream_connector", None)
 
     @staticmethod
     def add_environment(environment):
