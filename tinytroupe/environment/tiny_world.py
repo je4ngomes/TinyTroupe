@@ -29,38 +29,24 @@ class TinyWorld:
     # Whether to display environments communications or not, for all environments. 
     communication_display = True
 
-    def __init__(self, name: str=None, agents=[], 
+    def __init__(self, name: str = None,
+                 agents=[],
                  initial_datetime=datetime.now(),
                  interventions=[],
                  broadcast_if_no_target=True,
                  max_additional_targets_to_display=3):
         """
         Initializes an environment.
-
-        Args:
-            name (str): The name of the environment.
-            agents (list): A list of agents to add to the environment.
-            initial_datetifme (datetime): The initial datetime of the environment, or None (i.e., explicit time is optional). 
-                Defaults to the current datetime in the real world.
-            interventions (list): A list of interventions to apply in the environment at each simulation step.
-            broadcast_if_no_target (bool): If True, broadcast actions if the target of an action is not found.
-            max_additional_targets_to_display (int): The maximum number of additional targets to display in a communication. If None, 
-                all additional targets are displayed.
-            default_connector: Optional default data connector for saving/loading world data.
         """
-
         if name is not None:
             self.name = name
         else:
             self.name = f"TinyWorld {utils.fresh_id(self.__class__.__name__)}"
-            
         self.current_datetime = initial_datetime
         self.broadcast_if_no_target = broadcast_if_no_target
         self.simulation_id = None # will be reset later if the agent is used within a specific simulation scope
-        
         self.agents = []
         self.name_to_agent = {} # {agent_name: agent, agent_name_2: agent_2, ...}
-
         self._interventions = interventions
 
         # the buffer of communications that have been displayed so far, used for
@@ -73,15 +59,20 @@ class TinyWorld:
         self._max_additional_targets_to_display = max_additional_targets_to_display
 
         self.console = Console()
-
         # add the environment to the list of all environments
         TinyWorld.add_environment(self)
-        
         self.add_agents(agents)
 
         # --- Connectors ---
         self._connector = None
         self._communications_stream_connector = None
+
+        # --- Auto-save on communications ---
+        self._auto_save_enabled = False
+        self._auto_save_interval = 0
+        self._auto_save_counter = 0
+        self._auto_save_include_state = False
+        self._auto_save_kwargs = {}
         
     #######################################################################
     # Simulation control methods
@@ -122,25 +113,6 @@ class TinyWorld:
         else:
             agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step, 
                                                  randomize_agents_order=randomize_agents_order)
-        
-        # Handle auto-save if configured
-        if hasattr(self, '_auto_save_connector'):
-            self._auto_save_step_counter += 1
-            if self._auto_save_step_counter >= self._auto_save_interval:
-                try:
-                    # Generate auto-save destination name with step count
-                    auto_destination = f"auto_save_step_{self._auto_save_step_counter}"
-                    success = self.save_to_connector(
-                        self._auto_save_connector,
-                        destination=auto_destination,
-                        include_state=self._auto_save_include_state,
-                        **self._auto_save_kwargs
-                    )
-                    if success:
-                        logger.debug(f"Auto-saved world data at step {self._auto_save_step_counter}")
-                    self._auto_save_step_counter = 0  # Reset counter
-                except Exception as e:
-                    logger.error(f"Auto-save failed at step {self._auto_save_step_counter}: {e}")
         
         return agents_actions
         
@@ -701,6 +673,21 @@ class TinyWorld:
         # Handle streaming if enabled
         self._handle_communications_streaming(communication)
         
+        if self._auto_save_enabled:
+            self._auto_save_counter += 1
+            if self._auto_save_counter >= self._auto_save_interval:
+                try:
+                    dest = f"auto_save_comm_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    success = self.save_to_connector(
+                        include_state=self._auto_save_include_state,
+                        **self._auto_save_kwargs
+                    )
+                    if success:
+                        logger.debug(f"[{self.name}] Auto-saved world after {self._auto_save_interval} communications")
+                    self._auto_save_counter = 0
+                except Exception as e:
+                    logger.error(f"[{self.name}] Auto-save on communications failed: {e}")
+        
         self._display(communication)
 
     def pop_and_display_latest_communications(self):
@@ -1110,56 +1097,12 @@ class TinyWorld:
             logger.error(f"Error loading world data with connector {getattr(conn, 'name', repr(conn))}: {e}")
             return False
     
-    def auto_save_to_connector(self, save_interval: int = 10, 
-                              include_state: bool = False,
-                              **kwargs):
-        """
-        Enable automatic saving to a connector after simulation steps.
-        
-        This method sets up the world to automatically save data to the specified
-        connector every N simulation steps.
-        
-        Args:
-            Uses the default_connector set in the constructor.
-            save_interval (int): Number of steps between automatic saves
-            include_state (bool): Whether to include complete state in auto-saves
-            **kwargs: Additional parameters for the connector
-        """
-        # Use only the default_connector
-        conn = self._connector
-        if conn is None:
-            logger.error("No default_connector set on TinyWorld for auto-save.")
-            return
-        self._auto_save_connector = conn
-        self._auto_save_interval = save_interval
-        self._auto_save_include_state = include_state
-        self._auto_save_kwargs = kwargs
-        self._auto_save_step_counter = 0
-        logger.info(f"Enabled auto-save to {conn.name} every {save_interval} steps")
-    
-    def disable_auto_save(self):
-        """
-        Disable automatic saving to connector.
-        """
-        if hasattr(self, '_auto_save_connector'):
-            logger.info(f"Disabled auto-save to {self._auto_save_connector.name}")
-            delattr(self, '_auto_save_connector')
-            delattr(self, '_auto_save_interval') 
-            delattr(self, '_auto_save_include_state')
-            delattr(self, '_auto_save_kwargs')
-            delattr(self, '_auto_save_step_counter')
-    
     def cleanup_connectors(self):
         """
         Clean up all active connectors and streaming.
         Call this before destroying a world or at the end of a simulation.
         """
         cleanup_actions = []
-        
-        # Disable auto-save
-        if hasattr(self, '_auto_save_connector'):
-            self.disable_auto_save()
-            cleanup_actions.append("auto-save")
         
         # Disable communications streaming
         if hasattr(self, '_communications_stream_connector'):
@@ -1233,3 +1176,25 @@ class TinyWorld:
                     logger.info(f"[{self.name}] Reset event registered with connector.")
             except Exception as e:
                 logger.error(f"[{self.name}] Failed to persist reset: {e}")
+                
+    def enable_auto_save_on_communications(self, save_interval: int = 50,
+                                           include_state: bool = False,
+                                           **kwargs):
+        """
+        Enable automatic saving to the connector every `save_interval` communications.
+        """
+        if self._connector is None:
+            logger.error("No connector set on TinyWorld for auto-save.")
+            return
+        self._auto_save_enabled = True
+        self._auto_save_interval = save_interval
+        self._auto_save_counter = 0
+        self._auto_save_include_state = include_state
+        self._auto_save_kwargs = kwargs
+        logger.info(f"[{self.name}] Auto-save enabled every {save_interval} communications to {self._connector.name}")
+
+    def disable_auto_save_on_communications(self):
+        """Disable automatic saving to connector based on communications."""
+        if self._auto_save_enabled:
+            self._auto_save_enabled = False
+            logger.info(f"[{self.name}] Auto-save on communications disabled")
