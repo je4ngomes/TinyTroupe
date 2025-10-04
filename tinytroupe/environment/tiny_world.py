@@ -7,6 +7,7 @@ import random
 import concurrent.futures
 
 from tinytroupe.agent import *
+from tinytroupe.agent.memory import EpisodicMemory, SemanticMemory
 from tinytroupe.utils import name_or_empty, pretty_datetime
 import tinytroupe.control as control
 from tinytroupe.control import transactional
@@ -15,7 +16,7 @@ from tinytroupe import config_manager
 from tinytroupe.data_connectors import TinyStreamingDataConnector
 from rich.console import Console
 
-from typing import Any, TypeVar, Union, Optional
+from typing import Any, TypeVar, Union, Optional, List, Dict
 AgentOrWorld = Union["TinyPerson", "TinyWorld"]
 
 class TinyWorld:
@@ -66,13 +67,13 @@ class TinyWorld:
         # --- Connectors ---
         self._connector = None
         self._communications_stream_connector = None
+        self._persist_steps_to_connector = True
+        self._persist_agent_memory_each_step = True
 
-        # --- Auto-save on communications ---
-        self._auto_save_enabled = False
-        self._auto_save_interval = 0
-        self._auto_save_counter = 0
-        self._auto_save_include_state = False
-        self._auto_save_kwargs = {}
+        # --- Simulation progression ---
+        self.simulation_step = 0
+        self._last_persisted_communication_index = 0
+        self._last_saved_step_metadata = None
         
     #######################################################################
     # Simulation control methods
@@ -88,11 +89,13 @@ class TinyWorld:
         handle the resulting actions. Subclasses might override this method to implement 
         different policies.
         """
-        
         # Increase current datetime if timedelta is given. This must happen before
         # any other simulation updates, to make sure that the agents are acting
         # in the correct time, particularly if only one step is being run.
         self._advance_datetime(timedelta_per_step)
+
+        # Advance simulation step counter
+        self.simulation_step += 1
 
         # Apply interventions. 
         # 
@@ -114,6 +117,7 @@ class TinyWorld:
             agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step, 
                                                  randomize_agents_order=randomize_agents_order)
         
+        self._persist_simulation_step(agents_actions)
         return agents_actions
         
     def _step_sequentially(self, timedelta_per_step=None, randomize_agents_order=True):
@@ -673,21 +677,6 @@ class TinyWorld:
         # Handle streaming if enabled
         self._handle_communications_streaming(communication)
         
-        if self._auto_save_enabled:
-            self._auto_save_counter += 1
-            if self._auto_save_counter >= self._auto_save_interval:
-                try:
-                    dest = f"auto_save_comm_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    success = self.save_to_connector(
-                        include_state=self._auto_save_include_state,
-                        **self._auto_save_kwargs
-                    )
-                    if success:
-                        logger.debug(f"[{self.name}] Auto-saved world after {self._auto_save_interval} communications")
-                    self._auto_save_counter = 0
-                except Exception as e:
-                    logger.error(f"[{self.name}] Auto-save on communications failed: {e}")
-        
         self._display(communication)
 
     def pop_and_display_latest_communications(self):
@@ -719,6 +708,7 @@ class TinyWorld:
         Cleans the communications buffer.
         """
         self._displayed_communications_buffer = []
+        self._last_persisted_communication_index = 0
     
     def disable_communications_streaming(self):
         """
@@ -903,12 +893,18 @@ class TinyWorld:
 
         return self
 
-    def add_data_connector(self, connector):
-        """
-        Attach a persistence data connector to the world.
-        """
+    def add_data_connector(self,
+                           connector,
+                           persist_steps: bool = True,
+                           persist_agent_memory: bool = True):
+        """Attach a persistence data connector to the world."""
         self._connector = connector
-        logger.info(f"[{self.name}] Data connector {getattr(connector, 'name', repr(connector))} added.")
+        self._persist_steps_to_connector = persist_steps
+        self._persist_agent_memory_each_step = persist_agent_memory
+        if connector is not None:
+            logger.info(f"[{self.name}] Data connector {getattr(connector, 'name', repr(connector))} added (persist_steps={persist_steps}, persist_agent_memory={persist_agent_memory}).")
+        else:
+            logger.info(f"[{self.name}] Data connector cleared.")
         
 
     def add_streaming_connector(self, streaming_connector, stream_interval: int = 1, stream_batch_size: int = 10):
@@ -973,129 +969,155 @@ class TinyWorld:
         else:
             return None
     
-    def get_world_data(self, include_state: bool = False, include_interactions: bool = True, include_communications: bool = True):
-        """
-        Returns the world data as a dictionary.
-        
-        Args:
-            include_state (bool): Whether to include the complete world state.
-            include_interactions (bool): Whether to include agent interactions history.
-            include_communications (bool): Whether to include communications buffer.
-            
-        Returns:
-            dict: A dictionary containing the world data.
-        """
-        from datetime import datetime
-        
-        data = {
-            "saved_at": datetime.now().isoformat(),
-            "world_name": self.name,
-        }
-        
-        if include_state:
-            data["complete_state"] = self.encode_complete_state()
-            
-        if include_interactions:
-            data["interactions"] = self.pretty_current_interactions(
-                simplified=True,
-                skip_system=True,
-                max_content_length=None
-            )
-            
-        if include_communications:
-            # Use the displayed communications buffer for recent communications
-            data["communications"] = self._displayed_communications_buffer
-        
-        return data
-    
-    def save_to_connector(self, destination: str = None, 
-                         include_state: bool = False, 
-                         include_interactions: bool = True, 
-                         include_communications: bool = True,
-                         **kwargs) -> bool:
-        """
-        Save world data using an external data connector.
-        
-        Args:
-            Uses the default_connector set in the constructor.
-            destination (str): Optional destination identifier for the connector
-            include_state (bool): Whether to include the complete world state
-            include_interactions (bool): Whether to include agent interactions history
-            include_communications (bool): Whether to include communications history
-            **kwargs: Additional parameters passed to the connector
-            
-        Returns:
-            bool: True if save was successful, False otherwise
-        """
-        conn = self._connector
-        try:
-            # Get world data
-            world_data = self.get_world_data(
-                include_state=include_state,
-                include_interactions=include_interactions, 
-                include_communications=include_communications
-            )
-            # Use only the default_connector
-            if conn is None:
-                logger.error("No default_connector set on TinyWorld.")
-                return False
-            success = conn.save_world_data(world_data, destination, **kwargs)
-            if success:
-                logger.info(f"Successfully saved world '{self.name}' using {conn.name}")
-            else:
-                logger.error(f"Failed to save world '{self.name}' using {conn.name}")
-            return success
-        except Exception as e:
-            logger.error(f"Error saving world data with connector {getattr(conn, 'name', repr(conn))}: {e}")
-            return False
-    
-    def load_from_connector(self, source: str = None, 
-                           restore_state: bool = False,
-                           **kwargs) -> bool:
-        """
-        Load world data using an external data connector.
-        
-        Args:
-            Uses the default_connector set in the constructor.
-            source (str): Optional source identifier for the connector  
-            restore_state (bool): Whether to restore the complete world state (experimental)
-            **kwargs: Additional parameters passed to the connector
-            
-        Returns:
-            bool: True if load was successful, False otherwise
-        """
-        # Use only the default_connector
-        conn = self._connector
-        try:
+    def _collect_new_communications_for_step(self, advance_pointer: bool = False) -> List[dict]:
+        if self._last_persisted_communication_index >= len(self._displayed_communications_buffer):
+            return []
 
-            if conn is None:
-                logger.error("No default_connector set on TinyWorld.")
-                return False
-            world_data = conn.load_world_data(source, **kwargs)
-            if world_data is None:
-                logger.error(f"Failed to load world data using {conn.name}")
-                return False
-            # Restore basic information
-            logger.info(f"Loaded world data for '{world_data.get('world_name', 'unknown')}' "
-                       f"saved at {world_data.get('saved_at', 'unknown')}")
-            # Optionally restore complete state (experimental)
-            if restore_state and "complete_state" in world_data:
-                logger.warning("Restoring complete world state is experimental and may not work correctly")
-                try:
-                    self.decode_complete_state(world_data["complete_state"])
-                    logger.info("Successfully restored world state from connector data")
-                except Exception as e:
-                    logger.error(f"Failed to restore world state: {e}")
-                    return False
-            # Restore communications if available
-            if "communications" in world_data:
-                self._displayed_communications_buffer = world_data["communications"][-100:]  # Keep last 100
-                logger.info(f"Restored {len(self._displayed_communications_buffer)} recent communications to display buffer")
-            logger.info(f"Successfully loaded world data using {conn.name}")
-            return True
-        except Exception as e:
-            logger.error(f"Error loading world data with connector {getattr(conn, 'name', repr(conn))}: {e}")
+        new_items = self._displayed_communications_buffer[self._last_persisted_communication_index:]
+        if advance_pointer:
+            self._last_persisted_communication_index = len(self._displayed_communications_buffer)
+        return copy.deepcopy(new_items)
+
+    def _build_step_record(self, agents_actions: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        saved_at = datetime.now().isoformat()
+        metadata = {
+            "world_name": self.name,
+            "simulation_id": self.simulation_id,
+            "simulation_step": self.simulation_step,
+            "saved_at": saved_at,
+            "current_datetime": self.current_datetime.isoformat(),
+        }
+
+        payload: Dict[str, Any] = {
+            "agents_actions": agents_actions,
+        }
+
+        communications = self._collect_new_communications_for_step()
+        if communications:
+            payload["communications"] = communications
+
+        return metadata, payload
+
+    def _persist_simulation_step(self, agents_actions: Dict[str, Any]) -> None:
+        if self._connector is None or not self._persist_steps_to_connector:
+            return
+
+        try:
+            metadata, payload = self._build_step_record(agents_actions)
+            if not self._connector.validate_step_record(metadata, payload):
+                logger.error(f"[{self.name}] Step record validation failed; skipping persistence.")
+                return
+
+            persisted = self._connector.save_simulation_step(metadata, payload)
+            if not persisted:
+                logger.error(f"[{self.name}] Connector {self._connector.name} failed to persist step {self.simulation_step}.")
+            else:
+                self._last_saved_step_metadata = metadata
+                self._last_persisted_communication_index = len(self._displayed_communications_buffer)
+        except Exception as exc:
+            logger.error(f"[{self.name}] Error while persisting simulation step {self.simulation_step}: {exc}")
+
+        if self._persist_agent_memory_each_step and self.agents:
+            self.persist_agent_memories()
+
+    def persist_agent_memories(self, agents: Optional[List["TinyPerson"]] = None) -> bool:
+        if self._connector is None:
+            logger.error(f"[{self.name}] No data connector configured; cannot persist agent memories.")
             return False
+
+        target_agents = agents or list(self.agents)
+        if not target_agents:
+            logger.debug(f"[{self.name}] No agents to persist memories for.")
+            return True
+
+        timestamp = datetime.now().isoformat()
+        success = True
+        for agent in target_agents:
+            try:
+                snapshot = self._build_agent_memory_snapshot(agent, timestamp)
+                stored = self._connector.save_agent_memory(self.name, agent.name, snapshot)
+                if not stored:
+                    logger.error(f"[{self.name}] Failed to persist memory for agent {agent.name} using {self._connector.name}.")
+                    success = False
+            except Exception as exc:
+                logger.error(f"[{self.name}] Error while persisting memory for agent {agent.name}: {exc}")
+                success = False
+        return success
+
+    def _build_agent_memory_snapshot(self, agent: "TinyPerson", timestamp: str) -> Dict[str, Any]:
+        return {
+            "agent_name": agent.name,
+            "world_name": self.name,
+            "simulation_id": self.simulation_id,
+            "simulation_step": self.simulation_step,
+            "timestamp": timestamp,
+            "episodic_memory": agent.episodic_memory.to_json() if hasattr(agent, "episodic_memory") else None,
+            "semantic_memory": agent.semantic_memory.to_json() if hasattr(agent, "semantic_memory") else None,
+        }
+
+    def _apply_agent_memory_snapshot(self, agent: "TinyPerson", snapshot: Dict[str, Any]) -> None:
+        if snapshot is None:
+            return
+
+        episodic_payload = snapshot.get("episodic_memory")
+        semantic_payload = snapshot.get("semantic_memory")
+
+        if episodic_payload is not None:
+            agent.episodic_memory = EpisodicMemory.from_json(episodic_payload)
+        if semantic_payload is not None:
+            agent.semantic_memory = SemanticMemory.from_json(semantic_payload)
+
+    def _apply_step_metadata(self, metadata: Dict[str, Any]) -> None:
+        if not metadata:
+            return
+
+        step = metadata.get("simulation_step")
+        if step is not None:
+            self.simulation_step = step
+
+        current_datetime = metadata.get("current_datetime")
+        if current_datetime:
+            try:
+                self.current_datetime = datetime.fromisoformat(current_datetime)
+            except ValueError:
+                logger.warning(f"[{self.name}] Could not parse current_datetime '{current_datetime}'.")
+
+    def load_from_connector(self,
+                            agent_names: Optional[List[str]] = None,
+                            update_world_from_latest_step: bool = True,
+                            **kwargs) -> bool:
+        conn = self._connector
+        if conn is None:
+            logger.error("No data connector configured on TinyWorld.")
+            return False
+
+        target_agent_names = agent_names or [agent.name for agent in self.agents]
+        try:
+            memories = conn.load_agent_memories(self.name, agent_names=target_agent_names, **kwargs)
+        except Exception as exc:
+            logger.error(f"[{self.name}] Error loading agent memories from {conn.name}: {exc}")
+            return False
+
+        updated = 0
+        for agent in self.agents:
+            snapshot = memories.get(agent.name)
+            if snapshot:
+                self._apply_agent_memory_snapshot(agent, snapshot)
+                updated += 1
+
+        if update_world_from_latest_step:
+            try:
+                latest_steps = conn.load_simulation_steps(self.name, limit=1, reverse=True)
+            except Exception as exc:
+                logger.error(f"[{self.name}] Error loading latest simulation step metadata: {exc}")
+                latest_steps = []
+            if latest_steps:
+                metadata = latest_steps[0].get("metadata") or latest_steps[0].get("world_metadata") or {}
+                self._apply_step_metadata(metadata)
+                self._last_saved_step_metadata = metadata
+
+        logger.info(f"[{self.name}] Loaded memories for {updated}/{len(target_agent_names)} agents using {conn.name}.")
+        return True
     
     def cleanup_connectors(self):
         """
@@ -1124,34 +1146,21 @@ class TinyWorld:
         TinyWorld.all_environments = {}
 
 
-    def get_slim_complete_state(self) -> dict:
-        """
-        Build a lightweight, serialization-safe snapshot of the world.
-        This avoids deep-copying self.__dict__ and only includes fields that
-        decode_complete_state() actually restores.
-        """
-        return {
-            "name": self.name,
-            "simulation_id": self.simulation_id,
-            "broadcast_if_no_target": self.broadcast_if_no_target,
-            "_max_additional_targets_to_display": getattr(self, "_max_additional_targets_to_display", 3),
-            "current_datetime": self.current_datetime.isoformat(),
-            "agents": [agent.encode_complete_state() for agent in self.agents],
-        }
-        
-    def reset_generated_world_data(self, reset_time: datetime | None = None, persist: bool = True):
+    def reset_generated_world_data(self, reset_time: datetime | None = None):
         """
         Clears generated data but keeps the world and its agents.
-        If auto-save is enabled, also registers this reset as a save event.
         """
         if reset_time:
             self.current_datetime = reset_time
 
         # --- world cleanup ---
         self.clear_communications_buffer()
-        self._communications_stream_buffer = []
-        self._communications_stream_counter = 0
-        self._auto_save_step_counter = 0
+        if hasattr(self, '_communications_stream_buffer'):
+            self._communications_stream_buffer = []
+        if hasattr(self, '_communications_stream_counter'):
+            self._communications_stream_counter = 0
+        self.simulation_step = 0
+        self._last_saved_step_metadata = None
 
         # --- agent cleanup ---
         for agent in self.agents:
@@ -1163,38 +1172,3 @@ class TinyWorld:
             agent.pop_latest_actions()
             agent.reset_prompt()
 
-        # --- register reset if auto-save is enabled ---
-        if persist and hasattr(self, "_auto_save_connector"):
-            try:
-                success = self.save_to_connector(
-                    destination=f"reset_at_{datetime.now().isoformat()}",
-                    include_state=True,           # full clean state snapshot
-                    include_interactions=False,   # nothing to keep
-                    include_communications=False  # just cleared
-                )
-                if success:
-                    logger.info(f"[{self.name}] Reset event registered with connector.")
-            except Exception as e:
-                logger.error(f"[{self.name}] Failed to persist reset: {e}")
-                
-    def enable_auto_save_on_communications(self, save_interval: int = 50,
-                                           include_state: bool = False,
-                                           **kwargs):
-        """
-        Enable automatic saving to the connector every `save_interval` communications.
-        """
-        if self._connector is None:
-            logger.error("No connector set on TinyWorld for auto-save.")
-            return
-        self._auto_save_enabled = True
-        self._auto_save_interval = save_interval
-        self._auto_save_counter = 0
-        self._auto_save_include_state = include_state
-        self._auto_save_kwargs = kwargs
-        logger.info(f"[{self.name}] Auto-save enabled every {save_interval} communications to {self._connector.name}")
-
-    def disable_auto_save_on_communications(self):
-        """Disable automatic saving to connector based on communications."""
-        if self._auto_save_enabled:
-            self._auto_save_enabled = False
-            logger.info(f"[{self.name}] Auto-save on communications disabled")

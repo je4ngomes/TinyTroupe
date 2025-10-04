@@ -1,28 +1,16 @@
-"""
-Base connector class for TinyTroupe world data export and import.
+"""Base connector interfaces for TinyTroupe persistence backends."""
 
-This module defines the abstract base class for data connectors that handle
-saving and loading of world generated data to external destinations.
-"""
-
-import json
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from tinytroupe.utils import JsonSerializableRegistry
 from tinytroupe.environment import logger
+from tinytroupe.utils import JsonSerializableRegistry
 
 
 class TinyDataConnector(JsonSerializableRegistry, ABC):
-    """
-    Abstract base class for data connectors that handle saving and loading
-    of TinyTroupe world data to external destinations.
-    
-    This class provides the interface for implementing connectors to various
-    data storage systems such as files, databases, cloud storage, APIs, etc.
-    """
-    
+    """Abstract base class for persistence connectors used by TinyTroupe."""
+
     serializable_attributes = ["name", "description", "connector_type"]
     
     def __init__(self, name: str, description: str = "", connector_type: str = "base"):
@@ -42,87 +30,76 @@ class TinyDataConnector(JsonSerializableRegistry, ABC):
         self.operation_count = 0
         
     @abstractmethod
-    def save_world_data(self, world_data: Dict[str, Any], 
-                       destination: str = None, 
-                       **kwargs) -> bool:
-        """
-        Save world data to the external destination.
-        
-        Args:
-            world_data (Dict[str, Any]): The world data dictionary to save
-            destination (str): Optional specific destination within the connector
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            bool: True if save was successful, False otherwise
-        """
-        pass
-    
-    @abstractmethod 
-    def load_world_data(self, source: str = None, 
-                       **kwargs) -> Optional[Dict[str, Any]]:
-        """
-        Load world data from the external source.
-        
-        Args:
-            source (str): Optional specific source within the connector
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            Optional[Dict[str, Any]]: The loaded world data or None if failed
-        """
-        pass
-    
+    def save_simulation_step(self,
+                             world_metadata: Dict[str, Any],
+                             step_payload: Dict[str, Any],
+                             **kwargs) -> bool:
+        """Persist a single simulation step snapshot."""
+
+    @abstractmethod
+    def load_simulation_steps(self,
+                              world_name: str,
+                              start_step: Optional[int] = None,
+                              limit: int = 50,
+                              reverse: bool = False,
+                              **kwargs) -> List[Dict[str, Any]]:
+        """Retrieve simulation steps for a world, optionally paginated."""
+
+    @abstractmethod
+    def save_agent_memory(self,
+                          world_name: str,
+                          agent_name: str,
+                          memory_payload: Dict[str, Any],
+                          **kwargs) -> bool:
+        """Persist the memory snapshot for an agent."""
+
+    @abstractmethod
+    def load_agent_memory(self,
+                          world_name: str,
+                          agent_name: str,
+                          **kwargs) -> Optional[Dict[str, Any]]:
+        """Load the memory snapshot for a single agent."""
+
+    def load_agent_memories(self,
+                            world_name: str,
+                            agent_names: Optional[List[str]] = None,
+                            **kwargs) -> Dict[str, Dict[str, Any]]:
+        """Load memory snapshots for multiple agents."""
+        results: Dict[str, Dict[str, Any]] = {}
+        if agent_names is None:
+            logger.debug("No agent names provided to load_agent_memories; returning empty mapping.")
+            return results
+        for agent_name in agent_names:
+            memory = self.load_agent_memory(world_name, agent_name, **kwargs)
+            if memory is not None:
+                results[agent_name] = memory
+        return results
+
     @abstractmethod
     def list_available_data(self, **kwargs) -> List[str]:
-        """
-        List available data sources/destinations in this connector.
-        
-        Args:
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            List[str]: List of available data identifiers
-        """
-        pass
-    
+        """List identifiers (typically world names) available in the connector."""
+
     @abstractmethod
     def delete_data(self, identifier: str, **kwargs) -> bool:
-        """
-        Delete data from the external destination.
-        
-        Args:
-            identifier (str): Identifier of the data to delete
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            bool: True if deletion was successful, False otherwise
-        """
-        pass
-    
-    def validate_world_data(self, world_data: Dict[str, Any]) -> bool:
-        """
-        Validate that the provided data appears to be valid world data.
-        
-        Args:
-            world_data (Dict[str, Any]): The world data to validate
-            
-        Returns:
-            bool: True if data appears valid, False otherwise
-        """
-        required_fields = ["world_name", "saved_at"]
-        
-        if not isinstance(world_data, dict):
-            logger.warning("World data must be a dictionary")
+        """Delete all persisted data associated with the provided identifier."""
+
+    def validate_step_record(self,
+                             world_metadata: Dict[str, Any],
+                             step_payload: Dict[str, Any]) -> bool:
+        """Basic validation helper for step persistence inputs."""
+        required_fields = ["world_name", "simulation_step", "saved_at"]
+        if not isinstance(world_metadata, dict):
+            logger.warning("world_metadata must be a dictionary")
             return False
-            
         for field in required_fields:
-            if field not in world_data:
-                logger.warning(f"Missing required field in world data: {field}")
+            if world_metadata.get(field) is None:
+                logger.warning(f"Missing required field in world metadata: {field}")
                 return False
-                
+        if not isinstance(step_payload, dict):
+            logger.warning("step_payload must be a dictionary")
+            return False
         return True
-    
+
     def get_connector_info(self) -> Dict[str, Any]:
         """
         Get information about this connector instance.
@@ -169,42 +146,34 @@ class TinyDataConnector(JsonSerializableRegistry, ABC):
 
 
 class TinyBatchDataConnector(TinyDataConnector):
-    """
-    Extension of TinyDataConnector that supports batch operations for
-    saving/loading multiple world data sets at once.
-    """
-    
-    @abstractmethod
-    def save_batch_world_data(self, world_data_list: List[Dict[str, Any]], 
-                             destination_prefix: str = None,
-                             **kwargs) -> List[bool]:
-        """
-        Save multiple world data sets in a batch operation.
-        
-        Args:
-            world_data_list (List[Dict[str, Any]]): List of world data to save
-            destination_prefix (str): Optional prefix for batch destinations
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            List[bool]: Success status for each save operation
-        """
-        pass
-    
-    @abstractmethod
-    def load_batch_world_data(self, source_list: List[str],
-                             **kwargs) -> List[Optional[Dict[str, Any]]]:
-        """
-        Load multiple world data sets in a batch operation.
-        
-        Args:
-            source_list (List[str]): List of sources to load from
-            **kwargs: Additional connector-specific parameters
-            
-        Returns:
-            List[Optional[Dict[str, Any]]]: List of loaded world data
-        """
-        pass
+    """Optional mixin for connectors that support batch persistence APIs."""
+
+    def save_simulation_steps_batch(self,
+                                    steps: List[Dict[str, Dict[str, Any]]],
+                                    **kwargs) -> List[bool]:
+        """Persist a batch of simulation step records."""
+        statuses: List[bool] = []
+        for step in steps:
+            metadata = step.get("metadata", {})
+            payload = step.get("payload", {})
+            statuses.append(self.save_simulation_step(metadata, payload, **kwargs))
+        return statuses
+
+    def save_agent_memories_batch(self,
+                                   world_name: str,
+                                   memories: List[Dict[str, Any]],
+                                   **kwargs) -> List[bool]:
+        """Persist a batch of agent memory snapshots."""
+        statuses: List[bool] = []
+        for entry in memories:
+            agent_name = entry.get("agent_name")
+            if agent_name is None:
+                logger.warning("Missing agent_name in batch memory entry; skipping.")
+                statuses.append(False)
+                continue
+            payload = entry.get("memory") if "memory" in entry else entry
+            statuses.append(self.save_agent_memory(world_name, agent_name, payload, **kwargs))
+        return statuses
 
 
 class TinyStreamingDataConnector:
