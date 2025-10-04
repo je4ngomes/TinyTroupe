@@ -223,7 +223,15 @@ class BaseSemanticGroundingConnector(GroundingConnector):
                 logger.debug(f"Adding document {document} to index, text is: {document.text}")
 
                 # out of an abundance of caution, we sanitize the text
-                document.text = utils.sanitize_raw_string(document.text)
+                sanitized_text = utils.sanitize_raw_string(document.text)
+                
+                # Create a new Document with sanitized text since text property is read-only
+                if sanitized_text != document.text:
+                    document = Document(
+                        text=sanitized_text,
+                        metadata=document.metadata.copy() if document.metadata else {},
+                        id_=document.id_
+                    )
 
                 logger.debug(f"Document text after sanitization: {document.text}")
 

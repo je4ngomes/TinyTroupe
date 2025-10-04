@@ -207,19 +207,17 @@ class TinyBatchDataConnector(TinyDataConnector):
         pass
 
 
-class TinyStreamingDataConnector(TinyDataConnector):
+class TinyStreamingDataConnector:
     """
-    Extension of TinyDataConnector that supports streaming/real-time
-    data operations for continuous world data export.
+    Connector for streaming world data in real-time.
     """
     
     @abstractmethod
-    def start_streaming(self, destination: str = None, **kwargs) -> bool:
+    def start_streaming(self, **kwargs) -> bool:
         """
-        Start streaming world data to the destination.
+        Start streaming world data.
         
         Args:
-            destination (str): Stream destination identifier
             **kwargs: Additional streaming parameters
             
         Returns:
