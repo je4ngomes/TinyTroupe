@@ -235,9 +235,12 @@ api_type = config["OpenAI"].get("API_TYPE", "").lower()
 use_hf_embeddings = config["OpenAI"].getboolean("USE_HF_EMBEDDINGS", False)
 hf_model_name = config["OpenAI"].get("HF_EMBEDDING_MODEL", "BAAI/bge-m3")
 
-if use_hf_embeddings:
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-    llamaindex_embed_model = HuggingFaceEmbedding(model_name=hf_model_name)
+if use_hf_embeddings or api_type == "huggingface_api":
+    from llama_index.embeddings.huggingface_api import HuggingFaceInferenceAPIEmbedding
+    llamaindex_embed_model = HuggingFaceInferenceAPIEmbedding(
+        model_name=hf_model_name,
+        token=os.environ.get("HUGGINGFACE_API_TOKEN")
+    )
 elif api_type == "azure":
     from llama_index.embeddings.azure_openai import AzureOpenAIEmbedding
     llamaindex_embed_model = AzureOpenAIEmbedding(model=default["embedding_model"],
