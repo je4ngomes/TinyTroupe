@@ -45,35 +45,6 @@ class TinyDataConnector(JsonSerializableRegistry, ABC):
                               **kwargs) -> List[Dict[str, Any]]:
         """Retrieve simulation steps for a world, optionally paginated."""
 
-    @abstractmethod
-    def save_agent_memory(self,
-                          world_name: str,
-                          agent_name: str,
-                          memory_payload: Dict[str, Any],
-                          **kwargs) -> bool:
-        """Persist the memory snapshot for an agent."""
-
-    @abstractmethod
-    def load_agent_memory(self,
-                          world_name: str,
-                          agent_name: str,
-                          **kwargs) -> Optional[Dict[str, Any]]:
-        """Load the memory snapshot for a single agent."""
-
-    def load_agent_memories(self,
-                            world_name: str,
-                            agent_names: Optional[List[str]] = None,
-                            **kwargs) -> Dict[str, Dict[str, Any]]:
-        """Load memory snapshots for multiple agents."""
-        results: Dict[str, Dict[str, Any]] = {}
-        if agent_names is None:
-            logger.debug("No agent names provided to load_agent_memories; returning empty mapping.")
-            return results
-        for agent_name in agent_names:
-            memory = self.load_agent_memory(world_name, agent_name, **kwargs)
-            if memory is not None:
-                results[agent_name] = memory
-        return results
 
     @abstractmethod
     def list_available_data(self, **kwargs) -> List[str]:
@@ -159,64 +130,129 @@ class TinyBatchDataConnector(TinyDataConnector):
             statuses.append(self.save_simulation_step(metadata, payload, **kwargs))
         return statuses
 
-    def save_agent_memories_batch(self,
-                                   world_name: str,
-                                   memories: List[Dict[str, Any]],
-                                   **kwargs) -> List[bool]:
-        """Persist a batch of agent memory snapshots."""
-        statuses: List[bool] = []
-        for entry in memories:
-            agent_name = entry.get("agent_name")
-            if agent_name is None:
-                logger.warning("Missing agent_name in batch memory entry; skipping.")
-                statuses.append(False)
-                continue
-            payload = entry.get("memory") if "memory" in entry else entry
-            statuses.append(self.save_agent_memory(world_name, agent_name, payload, **kwargs))
-        return statuses
-
 
 class TinyStreamingDataConnector:
     """
     Connector for streaming world data in real-time.
     """
-    
+
     @abstractmethod
     def start_streaming(self, **kwargs) -> bool:
         """
         Start streaming world data.
-        
+
         Args:
             **kwargs: Additional streaming parameters
-            
+
         Returns:
             bool: True if streaming started successfully, False otherwise
         """
         pass
-    
+
     @abstractmethod
     def stream_world_data(self, world_data: Dict[str, Any], **kwargs) -> bool:
         """
         Stream a single world data update.
-        
+
         Args:
             world_data (Dict[str, Any]): World data to stream
             **kwargs: Additional streaming parameters
-            
+
         Returns:
             bool: True if streaming was successful, False otherwise
         """
         pass
-    
+
     @abstractmethod
     def stop_streaming(self, **kwargs) -> bool:
         """
         Stop the current streaming operation.
-        
+
         Args:
             **kwargs: Additional parameters
-            
+
         Returns:
             bool: True if stopped successfully, False otherwise
+        """
+        pass
+
+
+class TinyAgentMemoryConnector(ABC):
+    """
+    Abstract base class for agent-controlled memory persistence.
+
+    This connector is agent-centric and uses memory_id instead of world_name,
+    allowing agents to independently manage their own memory persistence across
+    different simulations or sessions.
+
+    Different from TinyDataConnector which is world-centric and controlled by
+    TinyWorld for saving all agents in a simulation.
+    """
+
+    @abstractmethod
+    def save_agent_memory(self,
+                          agent_name: str,
+                          memory_id: str,
+                          memory_payload: Dict[str, Any],
+                          **kwargs) -> bool:
+        """
+        Save agent memory with a specific memory_id.
+
+        Args:
+            agent_name (str): Name of the agent
+            memory_id (str): Identifier for this memory (e.g., simulation name, session ID)
+            memory_payload (Dict[str, Any]): Memory data to persist
+
+        Returns:
+            bool: True if save was successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def load_agent_memory(self,
+                          agent_name: str,
+                          memory_id: str,
+                          **kwargs) -> Optional[Dict[str, Any]]:
+        """
+        Load agent memory by memory_id.
+
+        Args:
+            agent_name (str): Name of the agent
+            memory_id (str): Identifier for the memory to load
+
+        Returns:
+            Optional[Dict[str, Any]]: Memory payload if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    def list_agent_memories(self,
+                            agent_name: str,
+                            **kwargs) -> List[str]:
+        """
+        List all available memory_ids for an agent.
+
+        Args:
+            agent_name (str): Name of the agent
+
+        Returns:
+            List[str]: List of memory_id strings
+        """
+        pass
+
+    @abstractmethod
+    def delete_agent_memory(self,
+                            agent_name: str,
+                            memory_id: str,
+                            **kwargs) -> bool:
+        """
+        Delete a specific agent memory.
+
+        Args:
+            agent_name (str): Name of the agent
+            memory_id (str): Identifier for the memory to delete
+
+        Returns:
+            bool: True if deletion was successful, False otherwise
         """
         pass

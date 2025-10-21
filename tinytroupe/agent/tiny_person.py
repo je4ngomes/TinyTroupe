@@ -41,8 +41,8 @@ class TinyPerson(JsonSerializableRegistry):
 
     PP_TEXT_WIDTH = 100
 
-    serializable_attributes = ["_persona", "_mental_state", "_mental_faculties", "_current_episode_event_count", "episodic_memory", "semantic_memory"]
-    serializable_attributes_renaming = {"_mental_faculties": "mental_faculties", "_persona": "persona", "_mental_state": "mental_state", "_current_episode_event_count": "current_episode_event_count"}
+    serializable_attributes = ["_persona", "_mental_state", "_mental_faculties", "_current_episode_event_count", "episodic_memory", "semantic_memory", "_memory_id", "_auto_save_memory"]
+    serializable_attributes_renaming = {"_mental_faculties": "mental_faculties", "_persona": "persona", "_mental_state": "mental_state", "_current_episode_event_count": "current_episode_event_count", "_memory_id": "memory_id", "_auto_save_memory": "auto_save_memory"}
 
     # A dict of all agents instantiated so far.
     all_agents = {}  # name -> agent
@@ -52,12 +52,15 @@ class TinyPerson(JsonSerializableRegistry):
     communication_display:bool=True
     
 
-    def __init__(self, name:str=None, 
+    def __init__(self, name:str=None,
                  action_generator=None,
                  episodic_memory=None,
                  semantic_memory=None,
                  mental_faculties:list=None,
-                 enable_basic_action_repetition_prevention:bool=True):
+                 enable_basic_action_repetition_prevention:bool=True,
+                 memory_id:str=None,
+                 memory_connector=None,
+                 auto_save_memory:bool=False):
         """
         Creates a TinyPerson.
 
@@ -68,9 +71,12 @@ class TinyPerson(JsonSerializableRegistry):
             semantic_memory (SemanticMemory, optional): The memory implementation to use. Defaults to SemanticMemory().
             mental_faculties (list, optional): A list of mental faculties to add to the agent. Defaults to None.
             enable_basic_action_repetition_prevention (bool, optional): Whether to enable basic action repetition prevention. Defaults to True.
+            memory_id (str, optional): Identifier for this agent's memory (e.g., simulation name, session ID). Defaults to None.
+            memory_connector (TinyAgentMemoryConnector, optional): Memory connector for agent-controlled persistence. Defaults to None.
+            auto_save_memory (bool, optional): If True, automatically save memory after significant events. Defaults to False.
         """
 
-        # NOTE: default values will be given in the _post_init method, as that's shared by 
+        # NOTE: default values will be given in the _post_init method, as that's shared by
         #       direct initialization as well as via deserialization.
 
         if action_generator is not None:
@@ -78,17 +84,27 @@ class TinyPerson(JsonSerializableRegistry):
 
         if episodic_memory is not None:
             self.episodic_memory = episodic_memory
-        
+
         if semantic_memory is not None:
             self.semantic_memory = semantic_memory
 
         # Mental faculties
         if mental_faculties is not None:
             self._mental_faculties = mental_faculties
-        
+
         if enable_basic_action_repetition_prevention:
             self.enable_basic_action_repetition_prevention = enable_basic_action_repetition_prevention
-        
+
+        # Memory connector for agent-controlled persistence
+        if memory_connector is not None:
+            self._memory_connector = memory_connector
+
+        if memory_id is not None:
+            self._memory_id = memory_id
+
+        if auto_save_memory:
+            self._auto_save_memory = auto_save_memory
+
         assert name is not None, "A TinyPerson must have a name."
         self.name = name
 
@@ -159,6 +175,16 @@ class TinyPerson(JsonSerializableRegistry):
         # basic action repetition prevention
         if not hasattr(self, 'enable_basic_action_repetition_prevention'):
             self.enable_basic_action_repetition_prevention = True
+
+        # Memory connector for agent-controlled persistence
+        if not hasattr(self, '_memory_connector'):
+            self._memory_connector = None
+
+        if not hasattr(self, '_memory_id'):
+            self._memory_id = None
+
+        if not hasattr(self, '_auto_save_memory'):
+            self._auto_save_memory = False
 
         # create the persona configuration dictionary
         if not hasattr(self, '_persona'):          
@@ -1551,6 +1577,144 @@ max_content_length=max_content_length,
             return self.environment.current_datetime.isoformat()
         else:
             return None
+
+    ###########################################################
+    # Memory Connector (Agent-Controlled Persistence)
+    ###########################################################
+
+    def set_memory_connector(self, connector, memory_id:str=None, auto_save:bool=False):
+        """
+        Attach a memory connector to this agent for agent-controlled persistence.
+
+        Args:
+            connector: TinyAgentMemoryConnector instance for persisting agent memory
+            memory_id (str, optional): Identifier for this agent's memory (e.g., simulation name, session ID)
+            auto_save (bool, optional): If True, automatically save memory after significant events
+        """
+        self._memory_connector = connector
+        if memory_id is not None:
+            self._memory_id = memory_id
+        self._auto_save_memory = auto_save
+
+    def save_memory(self, memory_id:str=None):
+        """
+        Save this agent's memory using the configured connector.
+
+        Args:
+            memory_id (str, optional): Optional override for the memory identifier
+
+        Returns:
+            bool: True if save was successful, False otherwise
+
+        Raises:
+            ValueError: If no memory connector is configured
+        """
+        if self._memory_connector is None:
+            raise ValueError(f"No memory connector configured for agent {self.name}. Use set_memory_connector() first.")
+
+        target_memory_id = memory_id or self._memory_id or "default"
+
+        snapshot = self._build_memory_snapshot()
+
+        # Check if connector has agent-centric methods (with _by_id suffix)
+        if hasattr(self._memory_connector, 'save_agent_memory_by_id'):
+            success = self._memory_connector.save_agent_memory_by_id(
+                agent_name=self.name,
+                memory_id=target_memory_id,
+                memory_payload=snapshot
+            )
+        else:
+            # Fallback to standard interface if available
+            success = self._memory_connector.save_agent_memory(
+                agent_name=self.name,
+                memory_id=target_memory_id,
+                memory_payload=snapshot
+            )
+
+        if success:
+            logger.debug(f"Successfully saved memory for agent {self.name} with memory_id={target_memory_id}")
+        else:
+            logger.warning(f"Failed to save memory for agent {self.name} with memory_id={target_memory_id}")
+
+        return success
+
+    def load_memory(self, memory_id:str=None):
+        """
+        Load this agent's memory from the configured connector.
+
+        Args:
+            memory_id (str): Identifier for the memory to load
+
+        Returns:
+            bool: True if load was successful, False otherwise
+
+        Raises:
+            ValueError: If no memory connector is configured or memory_id not provided
+        """
+        if self._memory_connector is None:
+            raise ValueError(f"No memory connector configured for agent {self.name}. Use set_memory_connector() first.")
+
+        target_memory_id = memory_id or self._memory_id
+        if not target_memory_id:
+            raise ValueError("memory_id must be provided either in __init__, set_memory_connector(), or load_memory()")
+
+        # Check if connector has agent-centric methods (with _by_id suffix)
+        if hasattr(self._memory_connector, 'load_agent_memory_by_id'):
+            snapshot = self._memory_connector.load_agent_memory_by_id(
+                agent_name=self.name,
+                memory_id=target_memory_id
+            )
+        else:
+            # Fallback to standard interface if available
+            snapshot = self._memory_connector.load_agent_memory(
+                agent_name=self.name,
+                memory_id=target_memory_id
+            )
+
+        if snapshot:
+            self._apply_memory_snapshot(snapshot)
+            self._memory_id = target_memory_id  # Update current memory_id
+            logger.debug(f"Successfully loaded memory for agent {self.name} with memory_id={target_memory_id}")
+            return True
+        else:
+            logger.warning(f"No memory found for agent {self.name} with memory_id={target_memory_id}")
+            return False
+
+    def _build_memory_snapshot(self):
+        """
+        Build a memory snapshot for persistence.
+
+        Returns:
+            dict: Memory snapshot containing episodic and semantic memory
+        """
+        from datetime import datetime
+
+        return {
+            "agent_name": self.name,
+            "memory_id": self._memory_id,
+            "timestamp": datetime.now().isoformat(),
+            "episodic_memory": self.episodic_memory.to_json() if hasattr(self, "episodic_memory") else None,
+            "semantic_memory": self.semantic_memory.to_json() if hasattr(self, "semantic_memory") else None,
+        }
+
+    def _apply_memory_snapshot(self, snapshot):
+        """
+        Apply a loaded memory snapshot to this agent.
+
+        Args:
+            snapshot (dict): Memory snapshot to apply
+        """
+        episodic_payload = snapshot.get("episodic_memory")
+        semantic_payload = snapshot.get("semantic_memory")
+
+        if episodic_payload:
+            self.episodic_memory = EpisodicMemory.from_json(episodic_payload)
+
+        if semantic_payload:
+            self.semantic_memory = SemanticMemory.from_json(semantic_payload)
+
+        # Reset prompt to reflect new memory
+        self.reset_prompt()
 
     ###########################################################
     # IO

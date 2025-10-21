@@ -358,7 +358,7 @@ class TinyWorld:
 
         Args:
             agent (TinyPerson): The agent to add to the environment.
-        
+
         Raises:
             ValueError: If the agent name is not unique within the environment.
         """
@@ -366,18 +366,25 @@ class TinyWorld:
         # check if the agent is not already in the environment
         if agent not in self.agents:
             logger.debug(f"Adding agent {agent.name} to the environment.")
-            
-            # Agent names must be unique in the environment. 
+
+            # Agent names must be unique in the environment.
             # Check if the agent name is already there.
             if agent.name not in self.name_to_agent:
                 agent.environment = self
                 self.agents.append(agent)
                 self.name_to_agent[agent.name] = agent
+
+                # Share world's connector with agent if world has one
+                # Agent uses concatenation of agent_name + world_name as memory_id
+                if self._connector is not None and not hasattr(agent, '_memory_connector'):
+                    memory_id = f"{agent.name}_{self.name}"
+                    agent.set_memory_connector(self._connector, memory_id=memory_id)
+                    logger.debug(f"[{self.name}] Shared connector with agent {agent.name} (memory_id={memory_id}).")
             else:
                 raise ValueError(f"Agent names must be unique, but '{agent.name}' is already in the environment.")
         else:
             logger.warn(f"Agent {agent.name} is already in the environment.")
-        
+
         return self # for chaining
 
     def remove_agent(self, agent: TinyPerson):
@@ -897,11 +904,25 @@ class TinyWorld:
                            connector,
                            persist_steps: bool = True,
                            persist_agent_memory: bool = True):
-        """Attach a persistence data connector to the world."""
+        """
+        Attach a persistence data connector to the world.
+
+        This connector is automatically shared with all agents in the world,
+        allowing them to manage their own memory persistence using memory_id.
+        """
         self._connector = connector
         self._persist_steps_to_connector = persist_steps
         self._persist_agent_memory_each_step = persist_agent_memory
+
+        # Share connector with all existing agents
         if connector is not None:
+            for agent in self.agents:
+                # Only set if agent doesn't already have a connector
+                if not hasattr(agent, '_memory_connector') or agent._memory_connector is None:
+                    memory_id = f"{agent.name}_{self.name}"
+                    agent.set_memory_connector(connector, memory_id=memory_id)
+                    logger.debug(f"[{self.name}] Shared connector with existing agent {agent.name} (memory_id={memory_id}).")
+
             logger.info(f"[{self.name}] Data connector {getattr(connector, 'name', repr(connector))} added (persist_steps={persist_steps}, persist_agent_memory={persist_agent_memory}).")
         else:
             logger.info(f"[{self.name}] Data connector cleared.")
@@ -1021,6 +1042,9 @@ class TinyWorld:
             self.persist_agent_memories()
 
     def persist_agent_memories(self, agents: Optional[List["TinyPerson"]] = None) -> bool:
+        """
+        Save agent memory snapshots. Agents manage their own memory persistence.
+        """
         if self._connector is None:
             logger.error(f"[{self.name}] No data connector configured; cannot persist agent memories.")
             return False
@@ -1030,30 +1054,27 @@ class TinyWorld:
             logger.debug(f"[{self.name}] No agents to persist memories for.")
             return True
 
-        timestamp = datetime.now().isoformat()
         success = True
         for agent in target_agents:
+            # Check if agent has memory connector
+            if not hasattr(agent, '_memory_connector') or agent._memory_connector is None:
+                logger.warning(f"[{self.name}] Agent {agent.name} has no memory connector. Skipping memory persistence.")
+                continue
+
+            # Agent saves its own memory
             try:
-                snapshot = self._build_agent_memory_snapshot(agent, timestamp)
-                stored = self._connector.save_agent_memory(self.name, agent.name, snapshot)
-                if not stored:
-                    logger.error(f"[{self.name}] Failed to persist memory for agent {agent.name} using {self._connector.name}.")
+                saved = agent.save_memory()
+                if not saved:
+                    logger.error(f"[{self.name}] Agent {agent.name} failed to save its own memory.")
                     success = False
+                else:
+                    logger.debug(f"[{self.name}] Agent {agent.name} saved its own memory (memory_id={agent._memory_id}).")
             except Exception as exc:
-                logger.error(f"[{self.name}] Error while persisting memory for agent {agent.name}: {exc}")
+                logger.error(f"[{self.name}] Error while agent {agent.name} was saving memory: {exc}")
                 success = False
+
         return success
 
-    def _build_agent_memory_snapshot(self, agent: "TinyPerson", timestamp: str) -> Dict[str, Any]:
-        return {
-            "agent_name": agent.name,
-            "world_name": self.name,
-            "simulation_id": self.simulation_id,
-            "simulation_step": self.simulation_step,
-            "timestamp": timestamp,
-            "episodic_memory": agent.episodic_memory.to_json() if hasattr(agent, "episodic_memory") else None,
-            "semantic_memory": agent.semantic_memory.to_json() if hasattr(agent, "semantic_memory") else None,
-        }
 
     def _apply_agent_memory_snapshot(self, agent: "TinyPerson", snapshot: Dict[str, Any]) -> None:
         if snapshot is None:
