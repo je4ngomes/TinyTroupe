@@ -948,7 +948,7 @@ class TinyWorld:
         logger.info(f"[{self.name}] Streaming enabled via {streaming_connector.name} "
                     f"(interval={stream_interval}, batch={stream_batch_size})")
 
-    def get_streaming_connector(self) -> Optional[TinyStreamingDataConnector]:
+    def get_streaming_connector(self) -> Optional["TinyStreamingDataConnector"]:
         """
         Return the streaming connector for this world, or None if not configured.
         """
