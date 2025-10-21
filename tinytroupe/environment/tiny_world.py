@@ -13,10 +13,13 @@ import tinytroupe.control as control
 from tinytroupe.control import transactional
 from tinytroupe import utils
 from tinytroupe import config_manager
-from tinytroupe.data_connectors import TinyStreamingDataConnector
 from rich.console import Console
 
-from typing import Any, TypeVar, Union, Optional, List, Dict
+from typing import Any, TypeVar, Union, Optional, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tinytroupe.data_connectors import TinyStreamingDataConnector
+    
 AgentOrWorld = Union["TinyPerson", "TinyWorld"]
 
 class TinyWorld:
