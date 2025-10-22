@@ -379,9 +379,10 @@ class TinyWorld:
 
                 # Share world's connector with agent if world has one
                 # Agent uses concatenation of agent_name + world_name as memory_id
-                if self._connector is not None and not hasattr(agent, '_memory_connector'):
+                connector = getattr(self, '_connector', None)
+                if connector is not None and not hasattr(agent, '_memory_connector'):
                     memory_id = f"{agent.name}_{self.name}"
-                    agent.set_memory_connector(self._connector, memory_id=memory_id)
+                    agent.set_memory_connector(connector, memory_id=memory_id)
                     logger.debug(f"[{self.name}] Shared connector with agent {agent.name} (memory_id={memory_id}).")
             else:
                 raise ValueError(f"Agent names must be unique, but '{agent.name}' is already in the environment.")
@@ -885,13 +886,13 @@ class TinyWorld:
                     agent = TinyPerson.get_agent_by_name(agent_state["name"])
                 except Exception as e:
                     raise ValueError(f"Could not find agent {agent_state['name']} for environment {self.name}.") from e
-                
+
                 agent.decode_complete_state(agent_state)
                 self.add_agent(agent)
-                
+
             except Exception as e:
                 raise ValueError(f"Could not decode agent {agent_state['name']} for environment {self.name}.") from e
-        
+
         # remove the agent states to update the rest of the environment
         del state["agents"]
 
@@ -900,6 +901,16 @@ class TinyWorld:
 
         # restore other fields
         self.__dict__.update(state)
+
+        # Ensure connector attributes are always present after decode
+        if not hasattr(self, '_connector'):
+            self._connector = None
+        if not hasattr(self, '_communications_stream_connector'):
+            self._communications_stream_connector = None
+        if not hasattr(self, '_persist_steps_to_connector'):
+            self._persist_steps_to_connector = True
+        if not hasattr(self, '_persist_agent_memory_each_step'):
+            self._persist_agent_memory_each_step = True
 
         return self
 
@@ -1023,32 +1034,37 @@ class TinyWorld:
         return metadata, payload
 
     def _persist_simulation_step(self, agents_actions: Dict[str, Any]) -> None:
-        if self._connector is None or not self._persist_steps_to_connector:
+        connector = getattr(self, '_connector', None)
+        persist_steps = getattr(self, '_persist_steps_to_connector', True)
+
+        if connector is None or not persist_steps:
             return
 
         try:
             metadata, payload = self._build_step_record(agents_actions)
-            if not self._connector.validate_step_record(metadata, payload):
+            if not connector.validate_step_record(metadata, payload):
                 logger.error(f"[{self.name}] Step record validation failed; skipping persistence.")
                 return
 
-            persisted = self._connector.save_simulation_step(metadata, payload)
+            persisted = connector.save_simulation_step(metadata, payload)
             if not persisted:
-                logger.error(f"[{self.name}] Connector {self._connector.name} failed to persist step {self.simulation_step}.")
+                logger.error(f"[{self.name}] Connector {connector.name} failed to persist step {self.simulation_step}.")
             else:
                 self._last_saved_step_metadata = metadata
                 self._last_persisted_communication_index = len(self._displayed_communications_buffer)
         except Exception as exc:
             logger.error(f"[{self.name}] Error while persisting simulation step {self.simulation_step}: {exc}")
 
-        if self._persist_agent_memory_each_step and self.agents:
+        persist_agent_memory = getattr(self, '_persist_agent_memory_each_step', True)
+        if persist_agent_memory and self.agents:
             self.persist_agent_memories()
 
     def persist_agent_memories(self, agents: Optional[List["TinyPerson"]] = None) -> bool:
         """
         Save agent memory snapshots. Agents manage their own memory persistence.
         """
-        if self._connector is None:
+        connector = getattr(self, '_connector', None)
+        if connector is None:
             logger.error(f"[{self.name}] No data connector configured; cannot persist agent memories.")
             return False
 
@@ -1066,7 +1082,7 @@ class TinyWorld:
 
             # Agent saves its own memory
             try:
-                saved = agent.save_memory()
+                saved = agent.save_memory(memory_id=f"{agent.name}_{self.name}")
                 if not saved:
                     logger.error(f"[{self.name}] Agent {agent.name} failed to save its own memory.")
                     success = False
@@ -1079,22 +1095,19 @@ class TinyWorld:
         return success
 
 
-    def _apply_agent_memory_snapshot(self, agent: "TinyPerson", snapshot: Dict[str, Any]) -> None:
-        if snapshot is None:
-            return
 
-        episodic_payload = snapshot.get("episodic_memory")
-        semantic_payload = snapshot.get("semantic_memory")
+    def _apply_step_data(self, metadata: Dict[str, Any], payload: Dict[str, Any] = None) -> None:
+        """
+        Apply loaded step data to restore world state.
 
-        if episodic_payload is not None:
-            agent.episodic_memory = EpisodicMemory.from_json(episodic_payload)
-        if semantic_payload is not None:
-            agent.semantic_memory = SemanticMemory.from_json(semantic_payload)
-
-    def _apply_step_metadata(self, metadata: Dict[str, Any]) -> None:
+        Args:
+            metadata: Step metadata containing simulation_step, current_datetime, etc.
+            payload: Step payload containing communications, agents_actions, etc.
+        """
         if not metadata:
             return
 
+        # Restore metadata fields
         step = metadata.get("simulation_step")
         if step is not None:
             self.simulation_step = step
@@ -1106,39 +1119,83 @@ class TinyWorld:
             except ValueError:
                 logger.warning(f"[{self.name}] Could not parse current_datetime '{current_datetime}'.")
 
+        # Restore payload data if available
+        if payload:
+            # Restore communications buffer
+            communications = payload.get("communications")
+            if communications and isinstance(communications, list):
+                self._displayed_communications_buffer.extend(communications)
+                self._last_persisted_communication_index = len(self._displayed_communications_buffer)
+                logger.debug(f"[{self.name}] Restored {len(communications)} communications from step data.")
+
     def load_from_connector(self,
                             agent_names: Optional[List[str]] = None,
                             update_world_from_latest_step: bool = True,
+                            load_all_steps: bool = False,
                             **kwargs) -> bool:
-        conn = self._connector
+        """
+        Load world and agent data from the connector.
+
+        Args:
+            agent_names: List of agent names to load memories for (default: all agents)
+            update_world_from_latest_step: If True, restore world state from latest step
+            load_all_steps: If True, load and restore all steps (not just latest)
+            **kwargs: Additional parameters passed to connector methods
+
+        Returns:
+            bool: True if loading was successful, False otherwise
+        """
+        conn = getattr(self, '_connector', None)
         if conn is None:
             logger.error("No data connector configured on TinyWorld.")
             return False
 
         target_agent_names = agent_names or [agent.name for agent in self.agents]
+
+        # Load agent memories using agent-centric approach
+        updated = 0
         try:
-            memories = conn.load_agent_memories(self.name, agent_names=target_agent_names, **kwargs)
+            for agent in self.agents:
+                if agent.name not in target_agent_names:
+                    continue
+
+                # Ensure agent has memory connector
+                memory_id = f"{agent.name}_{self.name}"
+                if not hasattr(agent, '_memory_connector') or agent._memory_connector is None:
+                    agent.set_memory_connector(conn, memory_id=memory_id)
+
+                # Let agent load its own memory
+                if agent.load_memory(memory_id):
+                    updated += 1
+
         except Exception as exc:
             logger.error(f"[{self.name}] Error loading agent memories from {conn.name}: {exc}")
             return False
 
-        updated = 0
-        for agent in self.agents:
-            snapshot = memories.get(agent.name)
-            if snapshot:
-                self._apply_agent_memory_snapshot(agent, snapshot)
-                updated += 1
-
-        if update_world_from_latest_step:
+        # Load simulation steps and restore world state
+        if update_world_from_latest_step or load_all_steps:
             try:
-                latest_steps = conn.load_simulation_steps(self.name, limit=1, reverse=True)
+                if load_all_steps:
+                    # Load all steps in chronological order
+                    steps = conn.load_simulation_steps(self.name, limit=0, reverse=False)
+                    if steps:
+                        logger.info(f"[{self.name}] Loading {len(steps)} simulation steps from connector.")
+                        for step_doc in steps:
+                            metadata = step_doc.get("metadata", {})
+                            payload = step_doc.get("payload", {})
+                            self._apply_step_data(metadata, payload)
+                else:
+                    # Load only the latest step
+                    latest_steps = conn.load_simulation_steps(self.name, limit=1, reverse=True)
+                    if latest_steps:
+                        step_doc = latest_steps[0]
+                        metadata = step_doc.get("metadata", {})
+                        payload = step_doc.get("payload", {})
+                        self._apply_step_data(metadata, payload)
+                        self._last_saved_step_metadata = metadata
             except Exception as exc:
-                logger.error(f"[{self.name}] Error loading latest simulation step metadata: {exc}")
-                latest_steps = []
-            if latest_steps:
-                metadata = latest_steps[0].get("metadata") or latest_steps[0].get("world_metadata") or {}
-                self._apply_step_metadata(metadata)
-                self._last_saved_step_metadata = metadata
+                logger.error(f"[{self.name}] Error loading simulation steps: {exc}")
+                # Don't return False here - agent memories may have loaded successfully
 
         logger.info(f"[{self.name}] Loaded memories for {updated}/{len(target_agent_names)} agents using {conn.name}.")
         return True

@@ -1616,20 +1616,12 @@ max_content_length=max_content_length,
 
         snapshot = self._build_memory_snapshot()
 
-        # Check if connector has agent-centric methods (with _by_id suffix)
-        if hasattr(self._memory_connector, 'save_agent_memory_by_id'):
-            success = self._memory_connector.save_agent_memory_by_id(
-                agent_name=self.name,
-                memory_id=target_memory_id,
-                memory_payload=snapshot
-            )
-        else:
-            # Fallback to standard interface if available
-            success = self._memory_connector.save_agent_memory(
-                agent_name=self.name,
-                memory_id=target_memory_id,
-                memory_payload=snapshot
-            )
+        # Save memory using agent-centric method
+        success = self._memory_connector.save_agent_memory_by_id(
+            agent_name=self.name,
+            memory_id=target_memory_id,
+            memory_payload=snapshot
+        )
 
         if success:
             logger.debug(f"Successfully saved memory for agent {self.name} with memory_id={target_memory_id}")
@@ -1658,18 +1650,11 @@ max_content_length=max_content_length,
         if not target_memory_id:
             raise ValueError("memory_id must be provided either in __init__, set_memory_connector(), or load_memory()")
 
-        # Check if connector has agent-centric methods (with _by_id suffix)
-        if hasattr(self._memory_connector, 'load_agent_memory_by_id'):
-            snapshot = self._memory_connector.load_agent_memory_by_id(
-                agent_name=self.name,
-                memory_id=target_memory_id
-            )
-        else:
-            # Fallback to standard interface if available
-            snapshot = self._memory_connector.load_agent_memory(
-                agent_name=self.name,
-                memory_id=target_memory_id
-            )
+        # Load memory using agent-centric method
+        snapshot = self._memory_connector.load_agent_memory_by_id(
+            agent_name=self.name,
+            memory_id=target_memory_id
+        )
 
         if snapshot:
             self._apply_memory_snapshot(snapshot)

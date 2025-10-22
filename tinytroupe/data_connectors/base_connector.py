@@ -103,11 +103,11 @@ class TinyDataConnector(JsonSerializableRegistry, ABC):
     def _handle_error(self, operation: str, error: Exception) -> bool:
         """
         Standard error handling for connector operations.
-        
+
         Args:
             operation (str): The operation that failed
             error (Exception): The exception that occurred
-            
+
         Returns:
             bool: Always False (indicating failure)
         """
