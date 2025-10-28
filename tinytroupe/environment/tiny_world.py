@@ -117,10 +117,11 @@ class TinyWorld:
         if parallelize:
             agents_actions = self._step_in_parallel(timedelta_per_step=timedelta_per_step)
         else:
-            agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step, 
+            agents_actions = self._step_sequentially(timedelta_per_step=timedelta_per_step,
                                                  randomize_agents_order=randomize_agents_order)
-        
+
         self._persist_simulation_step(agents_actions)
+        self._stream_simulation_step(agents_actions)
         return agents_actions
         
     def _step_sequentially(self, timedelta_per_step=None, randomize_agents_order=True):
@@ -729,18 +730,31 @@ class TinyWorld:
             # Flush any remaining communications
             if self._communications_stream_buffer:
                 self._flush_communications_stream()
-            
+
             # Stop streaming
             self._communications_stream_connector.stop_streaming()
-            
+
             logger.info(f"Disabled communications streaming to {self._communications_stream_connector.name}")
-            
+
             # Clean up attributes
             delattr(self, '_communications_stream_connector')
             delattr(self, '_communications_stream_interval')
             delattr(self, '_communications_stream_batch_size')
             delattr(self, '_communications_stream_buffer')
             delattr(self, '_communications_stream_counter')
+
+    def clear_step_streaming_connector(self):
+        """
+        Remove and stop the step-level streaming connector.
+        """
+        if hasattr(self, '_step_stream_connector'):
+            try:
+                self._step_stream_connector.stop_streaming()
+            except Exception as e:
+                logger.error(f"[{self.name}] Error stopping step stream connector: {e}")
+
+            delattr(self, '_step_stream_connector')
+            logger.info(f"[{self.name}] Cleared step-level streaming connector")
     
     def _flush_communications_stream(self):
         """
@@ -1094,6 +1108,69 @@ class TinyWorld:
 
         return success
 
+    def _stream_simulation_step(self, agents_actions: Dict[str, Any]) -> None:
+        """
+        Stream complete step data to connected clients in real-time.
+
+        Unlike communication-level streaming which sends fragments, this sends
+        complete step data with ALL communications from that step grouped together.
+
+        Args:
+            agents_actions: Dictionary of actions taken by agents in this step
+        """
+        step_stream_connector = getattr(self, '_step_stream_connector', None)
+
+        if step_stream_connector is None:
+            return
+
+        try:
+            # Reuse the same step record building logic as persistence
+            metadata, payload = self._build_step_record(agents_actions)
+
+            # Combine metadata and payload for streaming
+            stream_data = {
+                **metadata,
+                **payload,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Stream to connected clients
+            success = step_stream_connector.stream_world_data(stream_data)
+
+            if success:
+                logger.debug(f"[{self.name}] Streamed step {self.simulation_step} data")
+            else:
+                logger.warning(f"[{self.name}] Failed to stream step {self.simulation_step}")
+
+        except Exception as exc:
+            logger.error(f"[{self.name}] Error streaming step {self.simulation_step}: {exc}")
+
+
+    def add_step_streaming_connector(self, connector, auto_stream: bool = True):
+        """
+        Add a streaming connector that receives complete step data.
+
+        This is separate from add_streaming_connector() which sends individual
+        communications. Step-level streaming provides complete conversation turns.
+
+        Args:
+            connector: A streaming connector instance (e.g., WebSocketStreamingConnector)
+            auto_stream: If True, automatically start streaming when world runs
+
+        Example:
+            >>> world = TinyWorld("MyWorld")
+            >>> world.add_step_streaming_connector(
+            ...     WebSocketStreamingConnector("my_stream"),
+            ...     auto_stream=True
+            ... )
+        """
+        self._step_stream_connector = connector
+
+        if auto_stream:
+            connector.start_streaming()
+
+        logger.info(f"[{self.name}] Added step-level streaming connector: {connector.name}")
+
 
 
     def _apply_step_data(self, metadata: Dict[str, Any], payload: Dict[str, Any] = None) -> None:
@@ -1206,17 +1283,20 @@ class TinyWorld:
         Call this before destroying a world or at the end of a simulation.
         """
         cleanup_actions = []
-        
+
         # Disable communications streaming
         if hasattr(self, '_communications_stream_connector'):
             self.disable_communications_streaming()
             cleanup_actions.append("communications streaming")
-        
 
-        
+        # Disable step-level streaming
+        if hasattr(self, '_step_stream_connector'):
+            self.clear_step_streaming_connector()
+            cleanup_actions.append("step-level streaming")
+
         if cleanup_actions:
             logger.info(f"Cleaned up connectors: {', '.join(cleanup_actions)}")
-        
+
         return len(cleanup_actions)
 
     @staticmethod
