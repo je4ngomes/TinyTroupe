@@ -3,6 +3,8 @@ import logging
 import configparser
 import rich # for rich console output
 import rich.jupyter
+from contextlib import contextmanager
+import threading
 
 # add current path to sys.path
 import sys
@@ -35,6 +37,8 @@ class ConfigManager:
 
     def __init__(self):
         self._config = {}
+        self._override_lock = threading.Lock()
+        self._thread_overrides = {}  # Thread-local overrides
         self._initialize_from_config()
     
     def _initialize_from_config(self):
@@ -139,15 +143,25 @@ class ConfigManager:
     
     def get(self, key, default=None):
         """
-        Get a configuration value.
-        
+        Get a configuration value, with support for thread-local overrides.
+
         Args:
             key (str): The configuration key to retrieve
             default: The default value to return if key is not found
-            
+
         Returns:
-            The configuration value
+            The configuration value (thread-local override if present, otherwise shared config)
         """
+        # Check for thread-local override for the model key
+        if key == "model":
+            thread_id = threading.get_ident()
+            with self._override_lock:
+                if thread_id in self._thread_overrides:
+                    # If this thread has an active override, return it
+                    current_model = self._thread_overrides[thread_id].get("current_model")
+                    if current_model is not None:
+                        return current_model
+
         return self._config.get(key, default)
     
     def reset(self):
@@ -192,8 +206,56 @@ class ConfigManager:
                 return func(*args, **kwargs)
             
             return wrapper
-        
+
         return decorator
+
+    @contextmanager
+    def model_override(self, model=None):
+        """
+        Temporarily override the model configuration for the current thread.
+
+        Args:
+            model: Model name (e.g., 'gpt-4-turbo', 'anthropic/claude-3.5-sonnet')
+                   If None, uses config.ini default
+
+        Example:
+            with config_manager.model_override(model="anthropic/claude-3.5-sonnet"):
+                response = agent.listen_and_act("Hello")
+        """
+        if model is None:
+            # No override needed - just use defaults
+            yield
+            return
+
+        thread_id = threading.get_ident()
+
+        with self._override_lock:
+            # Initialize thread's override storage if needed
+            if thread_id not in self._thread_overrides:
+                self._thread_overrides[thread_id] = {"model_stack": [], "current_model": None}
+
+            # Save the current override value (for nested calls)
+            current_override = self._thread_overrides[thread_id].get("current_model")
+            self._thread_overrides[thread_id]["model_stack"].append(current_override)
+
+            # Set the new override value
+            self._thread_overrides[thread_id]["current_model"] = model
+
+        try:
+            yield
+        finally:
+            # Restore previous override value
+            with self._override_lock:
+                if thread_id in self._thread_overrides:
+                    stack = self._thread_overrides[thread_id].get("model_stack", [])
+                    if stack:
+                        # Pop the previous value from the stack
+                        previous_value = stack.pop()
+                        self._thread_overrides[thread_id]["current_model"] = previous_value
+
+                        # Clean up if no more overrides for this thread
+                        if not stack and previous_value is None:
+                            del self._thread_overrides[thread_id]
 
 
 # Create global instance of the configuration manager
