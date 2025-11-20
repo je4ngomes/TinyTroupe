@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import textwrap
 import random
 import concurrent.futures
+import contextvars
 
 from tinytroupe.agent import *
 from tinytroupe.agent.memory import EpisodicMemory, SemanticMemory
@@ -165,10 +166,28 @@ class TinyWorld:
     def _step_in_parallel(self, timedelta_per_step=None):
         """
         A parallelized version of the _step method to request agents to act.
+
+        Uses contextvars.copy_context() to propagate the current context (including
+        model overrides) to child threads.
         """
 
+        # Capture the current context - each thread will copy it
+        parent_ctx = contextvars.copy_context()
+
+        def run_agent_act_with_context(agent):
+            """Wrapper to run agent.act() within the parent's context."""
+            # Run the agent action in the copied parent context
+            return parent_ctx.run(agent.act, return_actions=True)
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(agent.act, return_actions=True): agent for agent in self.agents}
+            # Submit tasks sequentially so each ctx.run() completes before the next
+            # This is needed because ctx.run() cannot be entered concurrently
+            futures = {}
+            for agent in self.agents:
+                # Create a fresh context copy for each agent
+                ctx = contextvars.copy_context()
+                futures[executor.submit(ctx.run, agent.act, return_actions=True)] = agent
+
             agents_actions = {}
 
             # Wait for all futures to complete

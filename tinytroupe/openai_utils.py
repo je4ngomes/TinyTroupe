@@ -248,20 +248,63 @@ class OpenAIClient:
         logged_params = {k: v for k, v in chat_api_params.items() if k != "messages"} 
 
         if "response_format" in chat_api_params:
-            # to enforce the response format via pydantic, we need to use a different method
+            # Detect if we're using OpenRouter vs direct OpenAI
+            is_openrouter = "openrouter" in str(self.client.base_url).lower()
 
-            if "stream" in chat_api_params:
-                del chat_api_params["stream"]
+            if is_openrouter:
+                # OpenRouter doesn't support beta.parse(), use standard create() with json_schema
+                # Convert Pydantic model to OpenRouter's json_schema format
+                response_format = chat_api_params["response_format"]
 
-            logger.debug(f"Calling LLM model (using .parse too) with these parameters: {logged_params}. Not showing 'messages' parameter.")
-            # complete message
-            logger.debug(f"   --> Complete messages sent to LLM: {chat_api_params['messages']}")
+                # Check if it's already a dict (pre-converted schema) or a Pydantic model
+                if isinstance(response_format, dict):
+                    # Already converted, just use it
+                    return self.client.chat.completions.create(**chat_api_params)
+                elif hasattr(response_format, 'model_json_schema'):
+                    # It's a Pydantic model, convert it
+                    pydantic_model = response_format
 
-            result_message = self.client.beta.chat.completions.parse(
-                    **chat_api_params
-                )
+                    # Get the JSON schema
+                    schema = pydantic_model.model_json_schema()
 
-            return result_message 
+                    # Recursively add "additionalProperties": false to all objects
+                    # This is required by Azure/OpenRouter for strict schema validation
+                    def add_additional_properties_constraint(obj):
+                        if isinstance(obj, dict):
+                            if obj.get("type") == "object":
+                                obj["additionalProperties"] = False
+                            for value in obj.values():
+                                add_additional_properties_constraint(value)
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                add_additional_properties_constraint(item)
+
+                    add_additional_properties_constraint(schema)
+
+                    chat_api_params["response_format"] = {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "strict": True,
+                            "name": pydantic_model.__name__,
+                            "schema": schema
+                        }
+                    }
+
+                    return self.client.chat.completions.create(**chat_api_params)
+                else:
+                    # Unknown format, try to use it as-is
+                    return self.client.chat.completions.create(**chat_api_params)
+
+            else:
+                # Direct OpenAI - use beta.parse() for Pydantic models
+                if "stream" in chat_api_params:
+                    del chat_api_params["stream"]
+
+                result_message = self.client.beta.chat.completions.parse(
+                        **chat_api_params
+                    )
+
+                return result_message 
         
         else:
             logger.debug(f"Calling LLM model with these parameters: {logged_params}. Not showing 'messages' parameter.")
@@ -316,9 +359,11 @@ class OpenAIClient:
                 logger.debug("Token count: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
                 return self._count_tokens(messages, model="gpt-4-0613")
             else:
-                raise NotImplementedError(
-                    f"""_count_tokens() is not implemented for model {model}. See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens."""
-                )
+                # For non-OpenAI models (e.g., OpenRouter models like google/gemini, anthropic/claude),
+                # use a fallback estimation with cl100k_base encoding
+                logger.debug(f"Token count: Using fallback estimation for non-OpenAI model {model}")
+                tokens_per_message = 3  # Reasonable default
+                tokens_per_name = 1
             
             num_tokens = 0
             for message in messages:

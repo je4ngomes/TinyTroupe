@@ -5,11 +5,15 @@ import rich # for rich console output
 import rich.jupyter
 from contextlib import contextmanager
 import threading
+import contextvars
 
 # add current path to sys.path
 import sys
 sys.path.append('.')
 from tinytroupe import utils # now we can import our utils
+
+# ContextVar for model override - this propagates to child threads when using copy_context()
+_model_override_var: contextvars.ContextVar[str] = contextvars.ContextVar('model_override', default=None)
 
 # AI disclaimers
 print(\
@@ -37,8 +41,6 @@ class ConfigManager:
 
     def __init__(self):
         self._config = {}
-        self._override_lock = threading.Lock()
-        self._thread_overrides = {}  # Thread-local overrides
         self._initialize_from_config()
     
     def _initialize_from_config(self):
@@ -76,6 +78,7 @@ class ConfigManager:
 
         self._config["parallel_agent_actions"] = config["Simulation"].getboolean("PARALLEL_AGENT_ACTIONS", True)
         self._config["parallel_agent_generation"] = config["Simulation"].getboolean("PARALLEL_AGENT_GENERATION", True)
+        self._config["max_action_similarity"] = config["Simulation"].getfloat("MAX_ACTION_SIMILARITY", 0.85)
 
         self._config["enable_memory_consolidation"] = config["Cognition"].get("ENABLE_MEMORY_CONSOLIDATION", True)
         self._config["min_episode_length"] = config["Cognition"].getint("MIN_EPISODE_LENGTH", 30)
@@ -143,24 +146,23 @@ class ConfigManager:
     
     def get(self, key, default=None):
         """
-        Get a configuration value, with support for thread-local overrides.
+        Get a configuration value, with support for context-based overrides.
 
         Args:
             key (str): The configuration key to retrieve
             default: The default value to return if key is not found
 
         Returns:
-            The configuration value (thread-local override if present, otherwise shared config)
+            The configuration value (context override if present, otherwise shared config)
         """
-        # Check for thread-local override for the model key
+        # Check for context-based override for the model key
         if key == "model":
-            thread_id = threading.get_ident()
-            with self._override_lock:
-                if thread_id in self._thread_overrides:
-                    # If this thread has an active override, return it
-                    current_model = self._thread_overrides[thread_id].get("current_model")
-                    if current_model is not None:
-                        return current_model
+            # Use ContextVar which properly propagates to child threads
+            override_value = _model_override_var.get()
+            if override_value is not None:
+                thread_id = threading.get_ident()
+                logging.debug(f"🔧 get('model') [thread {thread_id}]: Found context override = {override_value}")
+                return override_value
 
         return self._config.get(key, default)
     
@@ -176,10 +178,10 @@ class ConfigManager:
     def config_defaults(self, **config_mappings):
         """
         Returns a decorator that replaces None default values with current config values.
-        
+
         Args:
             **config_mappings: Mapping of parameter names to config keys
-            
+
         Example:
             @config_manager.config_defaults(model="model", temp="temperature")
             def generate(prompt, model=None, temp=None):
@@ -188,7 +190,7 @@ class ConfigManager:
         """
         import functools
         import inspect
-        
+
         def decorator(func):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -196,15 +198,20 @@ class ConfigManager:
                 sig = inspect.signature(func)
                 bound_args = sig.bind_partial(*args, **kwargs)
                 bound_args.apply_defaults()
-                
+
                 # For each parameter that maps to a config key
                 for param_name, config_key in config_mappings.items():
                     # If the parameter is None, replace with config value
                     if param_name in bound_args.arguments and bound_args.arguments[param_name] is None:
-                        kwargs[param_name] = self.get(config_key)
-                
+                        config_value = self.get(config_key)
+                        kwargs[param_name] = config_value
+                        # Debug logging for model parameter
+                        if param_name == "model":
+                            thread_id = threading.get_ident()
+                            logging.info(f"🔧 config_defaults [thread {thread_id}, cm_id={id(self)}]: Resolved model = {config_value}")
+
                 return func(*args, **kwargs)
-            
+
             return wrapper
 
         return decorator
@@ -212,7 +219,10 @@ class ConfigManager:
     @contextmanager
     def model_override(self, model=None):
         """
-        Temporarily override the model configuration for the current thread.
+        Temporarily override the model configuration using ContextVar.
+
+        This override propagates to child threads when they are spawned with
+        contextvars.copy_context().
 
         Args:
             model: Model name (e.g., 'gpt-4-turbo', 'anthropic/claude-3.5-sonnet')
@@ -228,34 +238,17 @@ class ConfigManager:
             return
 
         thread_id = threading.get_ident()
+        logging.info(f"🔧 model_override [thread {thread_id}]: Setting context override to '{model}'")
 
-        with self._override_lock:
-            # Initialize thread's override storage if needed
-            if thread_id not in self._thread_overrides:
-                self._thread_overrides[thread_id] = {"model_stack": [], "current_model": None}
-
-            # Save the current override value (for nested calls)
-            current_override = self._thread_overrides[thread_id].get("current_model")
-            self._thread_overrides[thread_id]["model_stack"].append(current_override)
-
-            # Set the new override value
-            self._thread_overrides[thread_id]["current_model"] = model
+        # Save the current value and set the new one using ContextVar
+        token = _model_override_var.set(model)
 
         try:
             yield
         finally:
-            # Restore previous override value
-            with self._override_lock:
-                if thread_id in self._thread_overrides:
-                    stack = self._thread_overrides[thread_id].get("model_stack", [])
-                    if stack:
-                        # Pop the previous value from the stack
-                        previous_value = stack.pop()
-                        self._thread_overrides[thread_id]["current_model"] = previous_value
-
-                        # Clean up if no more overrides for this thread
-                        if not stack and previous_value is None:
-                            del self._thread_overrides[thread_id]
+            # Restore previous value using the token
+            _model_override_var.reset(token)
+            logging.debug(f"🔧 model_override [thread {thread_id}]: Restored context override")
 
 
 # Create global instance of the configuration manager

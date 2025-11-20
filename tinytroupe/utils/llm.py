@@ -844,8 +844,11 @@ def llm(enable_json_output_format:bool=True, enable_justification_step:bool=True
 ################################################################################
 def extract_json(text: str) -> dict:
     """
-    Extracts a JSON object from a string, ignoring: any text before the first 
+    Extracts a JSON object from a string, ignoring: any text before the first
     opening curly brace; and any Markdown opening (```json) or closing(```) tags.
+
+    Note: If multiple JSON objects are present (e.g., from models like Grok),
+    only the FIRST complete JSON object is extracted and returned.
     """
     try:
         logger.debug(f"Extracting JSON from text: {text}")
@@ -868,35 +871,42 @@ def extract_json(text: str) -> dict:
         # remove any text before the first opening curly or square braces, using regex. Leave the braces.
         filtered_text = re.sub(r'^.*?({|\[)', r'\1', text, flags=re.DOTALL)
 
-        # remove any trailing text after the LAST closing curly or square braces, using regex. Leave the braces.
-        filtered_text  =  re.sub(r'(}|\])(?!.*(\]|\})).*$', r'\1', filtered_text, flags=re.DOTALL)
-        
         # remove invalid escape sequences, which show up sometimes
         filtered_text = re.sub("\\'", "'", filtered_text) # replace \' with just '
         filtered_text = re.sub("\\,", ",", filtered_text)
 
         # parse the final JSON in a robust manner, to account for potentially messy LLM outputs
+        # Use JSONDecoder.raw_decode() to parse only the FIRST complete JSON object
+        # This handles cases where models output multiple JSON objects (e.g., Grok)
         try:
-            # First try standard JSON parsing
-            # use strict=False to correctly parse new lines, tabs, etc.
-            parsed = json.loads(filtered_text, strict=False)
+            # First try using raw_decode to get only the first JSON object
+            decoder = json.JSONDecoder(strict=False)
+            parsed, end_idx = decoder.raw_decode(filtered_text)
+
+            # If there's more content after the first JSON object, log it for debugging
+            remaining_text = filtered_text[end_idx:].strip()
+            if remaining_text:
+                logger.debug(f"Multiple JSON objects detected. Extracted first object only. Remaining text ignored: {remaining_text[:100]}...")
+
+            return parsed
+
         except json.JSONDecodeError:
             # If JSON parsing fails, try ast.literal_eval which accepts single quotes
             try:
                 parsed = ast.literal_eval(filtered_text)
                 logger.debug("Used ast.literal_eval as fallback for single-quoted JSON-like text")
+                return parsed
             except:
                 # If both fail, try converting single quotes to double quotes and parse again
                 # Replace single-quoted keys and values with double quotes, without using look-behind
                 # This will match single-quoted strings that are keys or values in JSON-like structures
                 # It may not be perfect for all edge cases, but works for most LLM outputs
                 converted_text = re.sub(r"'([^']*)'", r'"\1"', filtered_text)
-                parsed = json.loads(converted_text, strict=False)
+                decoder = json.JSONDecoder(strict=False)
+                parsed, _ = decoder.raw_decode(converted_text)
                 logger.debug("Converted single quotes to double quotes before parsing")
-        
-        # return the parsed JSON object
-        return parsed
-    
+                return parsed
+
     except Exception as e:
         logger.error(f"Error occurred while extracting JSON: {e}. Input text: {text}. Filtered text: {filtered_text}")
         return {}

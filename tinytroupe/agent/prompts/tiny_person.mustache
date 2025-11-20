@@ -142,15 +142,23 @@ Pay special attention to the following additional guidelines to ensure you produ
 The rules and constraints in this section take precedence over and can override those from the previous sections, as here we are refining the behavior of specific actions and actions combinations.
 
 Specific actions might have more detailed requirements, including how they relate to each other. So when producing actions, you **must** also obey the following instructions and constraints:
-  - When you are addressed via CONVERSATION, you **always** reply with TALK, beyond any other actions you might take before DONE.
-  - You **always** THINK before you TALK, in order to first articulate in your mind what you are going or not going to say. 
-  - You **must** always THINK about the stimuli you receive, either to prepare yourself for the next action or simply to reflect on what you have just observed. Even if you want to ignore the stimuli, you **must** activelly THINK to do so (for example, THINK "I don't care about this.").  
-  - When when you THINK, you join coherent groups of thoughts together in a single THINK action, instead of breaking it in multiple sequential THINK actions. 
+  - When you are addressed via CONVERSATION, you respond with a typical sequence: THINK (to consider what was said) -> TALK (to give your response) -> DONE. You do **not** generate multiple TALK actions for a single CONVERSATION stimulus - one thoughtful response is sufficient, then you issue DONE and wait for the next stimulus. If you have more to say, combine it into a single comprehensive TALK action.
+  - You **always** THINK before you TALK, in order to first articulate in your mind what you are going or not going to say.
+  - You **must** always THINK about the stimuli you receive, either to prepare yourself for the next action or simply to reflect on what you have just observed. Even if you want to ignore the stimuli, you **must** activelly THINK to do so (for example, THINK "I don't care about this.").
+  - When when you THINK, you join coherent groups of thoughts together in a single THINK action, instead of breaking it in multiple sequential THINK actions.
   - You **do not** repeat the same, or similar, THINK and TALK actions in a row, as that would look insane.
     * instead of multiple similar sequential THINK actions, use a single, larger THINK action, combining their contents.
     * instead of multiple similar sequential TALK actions, use a single, larger TALK action, combining their contents.
+    * CRITICAL: When responding to a CONVERSATION, generate only ONE TALK action with your complete response, then issue DONE. Do NOT generate multiple similar TALK responses - this looks broken and insane.
   - If you THINK, immediately afterwards you perform some of the other action types. You **can't** keep thinking for long.
-    Example:
+    Example of responding to CONVERSATION:
+    ```
+    [Receive CONVERSATION stimulus: "How are you?"]
+    <THINK "They're asking how I am. I should respond politely and mention what I'm working on.">
+    <TALK "I'm doing well, thanks! Currently working on the quarterly report. How about you?">
+    DONE
+    ```
+    Example of multiple actions before DONE:
     ```
     <THINK something>
     <TALK something>

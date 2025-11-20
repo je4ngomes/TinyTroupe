@@ -120,11 +120,11 @@ class ActionGenerator(JsonSerializableRegistry):
             return tentative_action, role, content, all_negative_feedbacks
 
         # First attempt to generate an action
-        tentative_action, role, content = self._generate_tentative_action(agent, current_messages, 
+        tentative_action, role, content = self._generate_tentative_action(agent, current_messages,
                                                                           feedback_from_previous_attempt=cur_feedback,
                                                                           previous_tentative_action=None,
                                                                           previous_llm_role=None, previous_llm_content=None)
-        
+
         if self.enable_quality_checks:
             # First quality check
             good_quality, total_score, cur_feedback = self._check_action_quality("Original Action", agent, tentative_action=tentative_action)
@@ -134,7 +134,7 @@ class ActionGenerator(JsonSerializableRegistry):
             if good_quality:
                 self.total_original_actions_succeeded += 1
                 # Found a good action, let's return it now
-                return finish_return(tentative_action, role, content, total_score) 
+                return finish_return(tentative_action, role, content, total_score)
             else:
                 logger.warning(f"[{agent.name}] Original action did not pass quality checks: {cur_feedback}")
                 all_negative_feedbacks.append(cur_feedback)
@@ -148,18 +148,18 @@ class ActionGenerator(JsonSerializableRegistry):
                 for attempt in range(self.max_attempts):
                     
                     # Generate tentative action
-                    tentative_action, role, content = self._generate_tentative_action(agent, current_messages, 
+                    tentative_action, role, content = self._generate_tentative_action(agent, current_messages,
                                                                                       feedback_from_previous_attempt=cur_feedback,
                                                                                       previous_tentative_action=tentative_action,
                                                                                       previous_llm_role=role, previous_llm_content=content)
-                    logger.debug(f"[{agent.name}] Tentative action: {tentative_action}") 
+
                     self.regeneration_attempts += 1
-                
+
                     good_quality, total_score, cur_feedback = self._check_action_quality(f"Action Regeneration ({attempt})", agent, tentative_action=tentative_action)
                     update_best(tentative_action, role, content, total_score)
                     if good_quality:
                         # Found a good action, let's return it now
-                        return finish_return(tentative_action, role, content, total_score)        
+                        return finish_return(tentative_action, role, content, total_score)
                     else:
                         self.regeneration_failures += 1
                         self.regeneration_scores.append(total_score)  # Assuming feedback contains a score
@@ -189,10 +189,10 @@ class ActionGenerator(JsonSerializableRegistry):
             if self.continue_on_failure:
                 logger.warning(f"[{agent.name}] All attempts to generate a good action failed. Returning the best one.")
                 return finish_return(best_action, best_role, best_content, best_score)
-            
+
             else:
                 raise PoorQualityActionException()
-        
+
         else:
             # If we got here, it means that the action was generated without quality checks
             # and we are not doing any regeneration or direct correction, so we can return it now.

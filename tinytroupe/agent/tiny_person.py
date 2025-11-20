@@ -33,8 +33,8 @@ class TinyPerson(JsonSerializableRegistry):
     MAX_ACTIONS_BEFORE_DONE = 15
 
     # The maximum similarity between consecutive actions. If the similarity is too high, the action is discarded and replaced by a DONE.
-    # Set this to None to disable the check.
-    MAX_ACTION_SIMILARITY = 0.85
+    # Set this to None to disable the check. Configurable via config.ini [Simulation] MAX_ACTION_SIMILARITY.
+    MAX_ACTION_SIMILARITY = config_manager.get("max_action_similarity", 0.85)
 
     MIN_EPISODE_LENGTH = config_manager.get("min_episode_length", 15)  # The minimum number of messages in an episode before it is considered valid.
     MAX_EPISODE_LENGTH = config_manager.get("max_episode_length", 50)  # The maximum number of messages in an episode before it is considered valid.
@@ -522,6 +522,61 @@ class TinyPerson(JsonSerializableRegistry):
         
         return self
 
+    def _remove_similar_consecutive_actions(self, contents_list, actions_buffer, action_type):
+        """
+        Removes consecutive actions of the same type from the end of the list,
+        keeping only the first occurrence. Called when similarity check triggers.
+
+        Args:
+            contents_list (list): List of action contents to clean
+            actions_buffer (list): List of actions in the buffer to clean
+            action_type (str): The type of action to check for similarity
+
+        Returns:
+            int: Number of actions removed
+        """
+        if len(contents_list) < 2:
+            return 0
+
+        # Count consecutive actions of the same type from the end
+        consecutive_count = 0
+        for i in range(len(contents_list) - 1, -1, -1):
+            if contents_list[i].get("action", {}).get("type") == action_type:
+                consecutive_count += 1
+            else:
+                break
+
+        # Keep the first, remove the rest
+        if consecutive_count > 1:
+            removed_count = consecutive_count - 1
+
+            # Remove from contents list
+            del contents_list[-removed_count:]
+
+            # Remove from actions buffer
+            for _ in range(min(removed_count, len(actions_buffer))):
+                if len(actions_buffer) > 0:
+                    actions_buffer.pop()
+
+            # Remove from episodic memory buffer
+            episodic_buffer = self.episodic_memory.episodic_buffer
+            removed_from_memory = 0
+
+            # Remove the last N actions of this type from episodic buffer
+            for i in range(len(episodic_buffer) - 1, -1, -1):
+                if removed_from_memory >= removed_count:
+                    break
+
+                item = episodic_buffer[i]
+                if (item.get('type') == 'action' and
+                    item.get('content', {}).get('action', {}).get('type') == action_type):
+                    del episodic_buffer[i]
+                    removed_from_memory += 1
+
+            return removed_count
+
+        return 0
+
     @transactional()
     @config_manager.config_defaults(max_content_length="max_content_display_length")
     def act(
@@ -577,12 +632,16 @@ class TinyPerson(JsonSerializableRegistry):
             # we have a redundant repetition check here, because this an be computed quickly and is often very useful.
             if self.enable_basic_action_repetition_prevention and \
                (TinyPerson.MAX_ACTION_SIMILARITY is not None) and (next_action_similarity > TinyPerson.MAX_ACTION_SIMILARITY):
-                
+
                 logger.warning(f"[{self.name}] Action similarity is too high ({next_action_similarity}), replacing it with DONE.")
+
+                # Clean up similar consecutive actions from response
+                action_type = action.get("type")
+                self._remove_similar_consecutive_actions(contents, self._actions_buffer, action_type)
 
                 # replace the action with a DONE
                 action = {"type": "DONE", "content": "", "target": ""}
-                content["action"] = action	
+                content["action"] = action
                 content["cognitive_state"] = {}
 
                 self.store_in_memory({'role': 'system', 
@@ -688,7 +747,15 @@ class TinyPerson(JsonSerializableRegistry):
                 if len(contents) > 4: # just some minimum number of actions to check for repetition, could be anything >= 3
                     # if the last three actions were the same, then we are probably in a loop
                     if contents[-1]['action'] == contents[-2]['action'] == contents[-3]['action']:
-                        logger.warning(f"[{self.name}] Agent {self.name} is acting in a loop. This may be a bug. Let's stop it here anyway.")
+                        logger.warning(f"[{self.name}] Agent {self.name} is acting in a loop (identical actions). This may be a bug. Let's stop it here anyway.")
+                        break
+
+                    # Also check if the same action TYPE is repeated (e.g., multiple THINK in a row)
+                    # This can happen with models that don't properly understand the DONE protocol (e.g., Gemini)
+                    if (contents[-1]['action']['type'] == contents[-2]['action']['type'] == contents[-3]['action']['type']
+                        and contents[-1]['action']['type'] in ['THINK', 'TALK']):
+                        logger.warning(f"[{self.name}] Agent {self.name} is repeating the same action type ({contents[-1]['action']['type']}) 3+ times. "
+                                      f"This likely indicates the model doesn't understand when to issue DONE. Forcing stop.")
                         break
 
                 aux_pre_act()

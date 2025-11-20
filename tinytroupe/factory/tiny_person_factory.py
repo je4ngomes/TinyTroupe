@@ -15,6 +15,7 @@ from tinytroupe import config_manager
 
 import concurrent.futures
 import threading
+import contextvars
 
 import math
 
@@ -425,8 +426,8 @@ class TinyPersonFactory(TinyFactory):
         # this is the function that will be executed in parallel
         def generate_person_wrapper(args):
             self, i, agent_particularities, temperature, frequency_penalty, presence_penalty, attempts, post_processing_func = args
-            person = self.generate_person(agent_particularities=agent_particularities, 
-                                        temperature=temperature, 
+            person = self.generate_person(agent_particularities=agent_particularities,
+                                        temperature=temperature,
                                         frequency_penalty=frequency_penalty,
                                         presence_penalty=presence_penalty,
                                         attempts=attempts,
@@ -435,10 +436,13 @@ class TinyPersonFactory(TinyFactory):
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             # we use a list of futures to keep track of the results
-            futures = [
-                executor.submit(generate_person_wrapper, (self, i, agent_particularities, temperature, frequency_penalty, presence_penalty, attempts, post_processing_func))
-                for i in range(number_of_people)
-            ]
+            # Each task gets its own context copy to allow concurrent execution
+            futures = []
+            for i in range(number_of_people):
+                # Create a fresh context copy for each person generation
+                ctx = contextvars.copy_context()
+                future = executor.submit(ctx.run, generate_person_wrapper, (self, i, agent_particularities, temperature, frequency_penalty, presence_penalty, attempts, post_processing_func))
+                futures.append(future)
 
             # we iterate over the futures as they are completed, and collect the results
             for future in concurrent.futures.as_completed(futures):
