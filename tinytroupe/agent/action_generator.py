@@ -79,13 +79,56 @@ class ActionGenerator(JsonSerializableRegistry):
         self.total_actions_produced = 0
         self.total_original_actions_succeeded = 0
 
+    def _transform_message_for_llm(self, msg):
+        """Transform message to OpenAI/OpenRouter format, handling multimodal content."""
+        role = msg["role"]
+        content = msg["content"]
+
+        # Check if stimulus has media URLs
+        if isinstance(content, dict) and "stimuli" in content:
+            has_media = any(
+                "media_urls" in stimulus and stimulus["media_urls"]
+                for stimulus in content["stimuli"]
+            )
+
+            if has_media:
+                # Build vision API format
+                content_parts = []
+
+                for stimulus in content["stimuli"]:
+                    # Add text content
+                    text_content = f"[{stimulus['type']}] {stimulus['content']}"
+                    if stimulus.get("source"):
+                        text_content += f" (from {stimulus['source']})"
+                    content_parts.append({"type": "text", "text": text_content})
+
+                    # Add media URLs
+                    if "media_urls" in stimulus and stimulus["media_urls"]:
+                        for media in stimulus["media_urls"]:
+                            if media["media_type"] == "image":
+                                content_parts.append({
+                                    "type": "image_url",
+                                    "image_url": {"url": media["url"]}
+                                })
+                            elif media["media_type"] == "video":
+                                content_parts.append({
+                                    "type": "video_url",
+                                    "video_url": {"url": media["url"]}
+                                })
+
+                return {"role": role, "content": content_parts}
+
+        # Default: serialize to JSON string (existing behavior)
+        return {"role": role, "content": json.dumps(content)}
+
     def generate_next_action(self, agent, current_messages:list):
 
         from tinytroupe.agent import logger # import here to avoid circular import issues
 
         # clean up (remove unnecessary elements) and copy the list of current messages to avoid modifying the original ones
+        # Also transform messages with media URLs to OpenAI/OpenRouter vision format
         current_messages = [
-            {"role": msg["role"], "content": json.dumps(msg["content"])}
+            self._transform_message_for_llm(msg)
             for msg in current_messages
         ]
 

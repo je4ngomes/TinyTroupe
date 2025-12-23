@@ -132,7 +132,14 @@ class OpenAIClient:
         if dedent_messages:
             for message in current_messages:
                 if "content" in message:
-                    message["content"] = utils.dedent(message["content"])
+                    # Only dedent if content is a string
+                    if isinstance(message["content"], str):
+                        message["content"] = utils.dedent(message["content"])
+                    # If content is a list (vision format), dedent text parts only
+                    elif isinstance(message["content"], list):
+                        for part in message["content"]:
+                            if part.get("type") == "text" and "text" in part:
+                                part["text"] = utils.dedent(part["text"])
             
         
         # We need to adapt the parameters to the API type, so we create a dictionary with them first

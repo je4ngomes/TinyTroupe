@@ -774,7 +774,8 @@ class TinyPerson(JsonSerializableRegistry):
         speech,
         source: AgentOrWorld = None,
         max_content_length=None,
-        communication_display:bool=None
+        communication_display:bool=None,
+        media_urls=None
     ):
         """
         Listens to another agent (artificial or human) and updates its internal cognitive state.
@@ -784,15 +785,19 @@ class TinyPerson(JsonSerializableRegistry):
             source (AgentOrWorld, optional): The source of the speech. Defaults to None.
             max_content_length (int, optional): The maximum length of the content to display. Defaults to None, which uses the global configuration value.
             communication_display (bool): Whether to display the communication or not, will override the global setting if provided. Defaults to None.
-        
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
+
         """
+        stimulus = {
+            "type": "CONVERSATION",
+            "content": speech,
+            "source": name_or_empty(source),
+        }
+        if media_urls:
+            stimulus["media_urls"] = media_urls
 
         return self._observe(
-            stimulus={
-                "type": "CONVERSATION",
-                "content": speech,
-                "source": name_or_empty(source),
-            },
+            stimulus=stimulus,
             max_content_length=max_content_length,
             communication_display=communication_display
         )
@@ -803,6 +808,7 @@ class TinyPerson(JsonSerializableRegistry):
         social_description: str,
         source: AgentOrWorld = None,
         max_content_length=None,
+        media_urls=None
     ):
         """
         Perceives a social stimulus through a description and updates its internal cognitive state.
@@ -810,13 +816,18 @@ class TinyPerson(JsonSerializableRegistry):
         Args:
             social_description (str): The description of the social stimulus.
             source (AgentOrWorld, optional): The source of the social stimulus. Defaults to None.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
+        stimulus = {
+            "type": "SOCIAL",
+            "content": social_description,
+            "source": name_or_empty(source),
+        }
+        if media_urls:
+            stimulus["media_urls"] = media_urls
+
         return self._observe(
-            stimulus={
-                "type": "SOCIAL",
-                "content": social_description,
-                "source": name_or_empty(source),
-            },
+            stimulus=stimulus,
             max_content_length=max_content_length,
         )
 
@@ -826,6 +837,7 @@ class TinyPerson(JsonSerializableRegistry):
         visual_description,
         source: AgentOrWorld = None,
         max_content_length=None,
+        media_urls=None
     ):
         """
         Perceives a visual stimulus through a description and updates its internal cognitive state.
@@ -833,44 +845,66 @@ class TinyPerson(JsonSerializableRegistry):
         Args:
             visual_description (str): The description of the visual stimulus.
             source (AgentOrWorld, optional): The source of the visual stimulus. Defaults to None.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
+        stimulus = {
+            "type": "VISUAL",
+            "content": visual_description,
+            "source": name_or_empty(source),
+        }
+        if media_urls:
+            stimulus["media_urls"] = media_urls
+
         return self._observe(
-            stimulus={
-                "type": "VISUAL",
-                "content": visual_description,
-                "source": name_or_empty(source),
-            },
+            stimulus=stimulus,
             max_content_length=max_content_length,
         )
 
     @config_manager.config_defaults(max_content_length="max_content_display_length")
-    def think(self, thought, max_content_length=None):
+    def think(self, thought, max_content_length=None, media_urls=None):
         """
         Forces the agent to think about something and updates its internal cognitive state.
 
+        Args:
+            thought (str): The thought content.
+            max_content_length (int, optional): The maximum length of the content to display.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
+        stimulus = {
+            "type": "THOUGHT",
+            "content": thought,
+            "source": name_or_empty(self),
+        }
+        if media_urls:
+            stimulus["media_urls"] = media_urls
+
         return self._observe(
-            stimulus={
-                "type": "THOUGHT",
-                "content": thought,
-                "source": name_or_empty(self),
-            },
+            stimulus=stimulus,
             max_content_length=max_content_length,
         )
 
     @config_manager.config_defaults(max_content_length="max_content_display_length")
     def internalize_goal(
-        self, goal, max_content_length=None
+        self, goal, max_content_length=None, media_urls=None
     ):
         """
         Internalizes a goal and updates its internal cognitive state.
+
+        Args:
+            goal (str): The goal content.
+            max_content_length (int, optional): The maximum length of the content to display.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
+        stimulus = {
+            "type": "INTERNAL_GOAL_FORMULATION",
+            "content": goal,
+            "source": name_or_empty(self),
+        }
+        if media_urls:
+            stimulus["media_urls"] = media_urls
+
         return self._observe(
-            stimulus={
-                "type": "INTERNAL_GOAL_FORMULATION",
-                "content": goal,
-                "source": name_or_empty(self),
-            },
+            stimulus=stimulus,
             max_content_length=max_content_length,
         )
 
@@ -918,13 +952,21 @@ max_content_length=max_content_length,
         speech,
         return_actions=False,
         max_content_length=None,
-        communication_display:bool=None
+        communication_display:bool=None,
+        media_urls=None
     ):
         """
         Convenience method that combines the `listen` and `act` methods.
+
+        Args:
+            speech (str): The speech to listen to.
+            return_actions (bool): Whether to return actions.
+            max_content_length (int, optional): The maximum length of the content to display.
+            communication_display (bool): Whether to display the communication.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
 
-        self.listen(speech, max_content_length=max_content_length, communication_display=communication_display)
+        self.listen(speech, max_content_length=max_content_length, communication_display=communication_display, media_urls=media_urls)
         return self.act(
             return_actions=return_actions, max_content_length=max_content_length, communication_display=communication_display
         )
@@ -936,12 +978,19 @@ max_content_length=max_content_length,
         visual_description,
         return_actions=False,
         max_content_length=None,
+        media_urls=None
     ):
         """
         Convenience method that combines the `see` and `act` methods.
+
+        Args:
+            visual_description (str): The description of the visual stimulus.
+            return_actions (bool): Whether to return actions.
+            max_content_length (int, optional): The maximum length of the content to display.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
 
-        self.see(visual_description, max_content_length=max_content_length)
+        self.see(visual_description, max_content_length=max_content_length, media_urls=media_urls)
         return self.act(
             return_actions=return_actions, max_content_length=max_content_length
         )
@@ -953,12 +1002,19 @@ max_content_length=max_content_length,
         thought,
         return_actions=False,
         max_content_length=None,
+        media_urls=None
     ):
         """
         Convenience method that combines the `think` and `act` methods.
+
+        Args:
+            thought (str): The thought content.
+            return_actions (bool): Whether to return actions.
+            max_content_length (int, optional): The maximum length of the content to display.
+            media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
         """
 
-        self.think(thought, max_content_length=max_content_length)
+        self.think(thought, max_content_length=max_content_length, media_urls=media_urls)
         return self.act(return_actions=return_actions, max_content_length=max_content_length)
 
     def read_documents_from_folder(self, documents_path:str):
