@@ -629,9 +629,21 @@ class TinyPerson(JsonSerializableRegistry):
             # check the next action similarity, and if it is too similar, put a system warning instruction in memory too
             next_action_similarity = utils.next_action_jaccard_similarity(self, action)
 
-            # we have a redundant repetition check here, because this an be computed quickly and is often very useful.
+            # Check if there's been a new stimulus since the last action
+            has_new_stimulus = utils.has_stimulus_since_last_action(self)
+
+            # Add debug logging
+            logger.debug(f"[{self.name}] Action similarity: {next_action_similarity:.2f}, has_new_stimulus: {has_new_stimulus}")
+
+            # Only prevent repetition if:
+            # 1. Repetition prevention is enabled
+            # 2. Similarity threshold is set
+            # 3. Similarity exceeds threshold
+            # 4. There's NO new stimulus (to allow responding to repeated user inputs)
             if self.enable_basic_action_repetition_prevention and \
-               (TinyPerson.MAX_ACTION_SIMILARITY is not None) and (next_action_similarity > TinyPerson.MAX_ACTION_SIMILARITY):
+               (TinyPerson.MAX_ACTION_SIMILARITY is not None) and \
+               (next_action_similarity > TinyPerson.MAX_ACTION_SIMILARITY) and \
+               (not has_new_stimulus):
 
                 logger.warning(f"[{self.name}] Action similarity is too high ({next_action_similarity}), replacing it with DONE.")
 
@@ -644,12 +656,13 @@ class TinyPerson(JsonSerializableRegistry):
                 content["action"] = action
                 content["cognitive_state"] = {}
 
-                self.store_in_memory({'role': 'system', 
+                self.store_in_memory({'role': 'system',
                                     'content': \
                                         f"""
                                         # EXCESSIVE ACTION SIMILARITY WARNING
 
-                                        You were about to generate a repetitive action (jaccard similarity = {next_action_similarity}).
+                                        You were about to generate a repetitive action (jaccard similarity = {next_action_similarity})
+                                        without any new external stimulus or input.
                                         Thus, the action was discarded and replaced by an artificial DONE.
 
                                         DO NOT BE REPETITIVE. This is not a human-like behavior, therefore you **must** avoid this in the future.
@@ -658,7 +671,7 @@ class TinyPerson(JsonSerializableRegistry):
                                         - aggregate similar actions into a single, larger, action and produce it all at once.
                                         - as a **last resort only**, you may simply not acting at all by issuing a DONE.
 
-                                        
+
                                         """,
                                     'type': 'feedback',
                                     'simulation_timestamp': self.iso_datetime()})

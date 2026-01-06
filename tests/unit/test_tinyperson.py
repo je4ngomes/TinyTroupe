@@ -171,5 +171,24 @@ def test_save_specification(setup):
 def test_programmatic_definitions(setup):
     for agent in [create_oscar_the_architect_2(), create_lisa_the_data_scientist_2()]:
         agent.listen_and_act("Tell me a bit about your life.")
-    
-    
+
+def test_repeated_user_messages_get_responses(setup):
+    """
+    Test that agents respond to repeated user messages with TALK actions, not just DONE.
+    This verifies the fix for the bug where action similarity detection was preventing
+    legitimate responses to repeated or similar user input.
+    """
+    for agent in [create_oscar_the_architect(), create_lisa_the_data_scientist()]:
+        # First greeting
+        actions1 = agent.listen_and_act("Hello", return_actions=True)
+        assert len(actions1) >= 1, f"{agent.name} should have at least one action."
+        assert contains_action_type(actions1, "TALK"), f"{agent.name} should respond with TALK to first greeting."
+        assert terminates_with_action_type(actions1, "DONE"), f"{agent.name} should terminate with DONE."
+
+        # Second identical greeting - should still get a TALK response, not just DONE
+        actions2 = agent.listen_and_act("Hello", return_actions=True)
+        assert len(actions2) >= 1, f"{agent.name} should have at least one action for repeated message."
+        assert contains_action_type(actions2, "TALK"), f"{agent.name} should respond with TALK to repeated greeting, not just DONE."
+        assert terminates_with_action_type(actions2, "DONE"), f"{agent.name} should terminate with DONE."
+
+

@@ -41,3 +41,41 @@ def next_action_jaccard_similarity(agent, proposed_next_action):
     jaccard_similarity = textdistance.jaccard(current_action_content, proposed_next_action_content)
 
     return jaccard_similarity
+
+
+def has_stimulus_since_last_action(agent):
+    """
+    Check if there has been a stimulus since the last substantive action.
+
+    This helps distinguish between:
+    - Agent looping (no new stimulus) - should be prevented
+    - Agent responding to repeated inputs (new stimulus) - should be allowed
+
+    Args:
+        agent (TinyPerson): The agent to check
+
+    Returns:
+        bool: True if there's been a stimulus since last action, False otherwise
+    """
+    # Get recent memory items (both actions and stimuli)
+    memory_items = agent.episodic_memory.retrieve_last(n=10, include_omission_info=False)
+
+    if not memory_items:
+        return False
+
+    # Walk backwards through memory
+    # If we encounter a stimulus before an action, return True
+    # If we encounter an action before a stimulus, return False
+    for item in reversed(memory_items):
+        item_type = item.get('type')
+
+        if item_type == 'stimulus':
+            return True  # Found stimulus before action
+        elif item_type == 'action':
+            action_content = item.get('content', {}).get('action', {})
+            # Ignore DONE actions as they're not substantive
+            if action_content.get('type') != 'DONE':
+                return False  # Found substantive action before stimulus
+
+    # If we didn't find either, assume no stimulus
+    return False
