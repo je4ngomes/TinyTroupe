@@ -81,8 +81,12 @@ class ConfigManager:
         self._config["max_action_similarity"] = config["Simulation"].getfloat("MAX_ACTION_SIMILARITY", 0.85)
 
         self._config["enable_memory_consolidation"] = config["Cognition"].get("ENABLE_MEMORY_CONSOLIDATION", True)
+        self._config["enable_semantic_retrieval"] = config["Cognition"].getboolean("ENABLE_SEMANTIC_MEMORY_RETRIEVAL", True)
+        self._config["semantic_memory_top_k"] = config["Cognition"].getint("SEMANTIC_MEMORY_TOP_K", 3)
+        self._config["semantic_memory_cache_size"] = config["Cognition"].getint("SEMANTIC_MEMORY_CACHE_SIZE", 50)
+        self._config["semantic_memory_cache_ttl"] = config["Cognition"].getint("SEMANTIC_MEMORY_CACHE_TTL", 300)
         self._config["min_episode_length"] = config["Cognition"].getint("MIN_EPISODE_LENGTH", 30)
-        self._config["max_episode_length"] = config["Cognition"].getint("MAX_EPISODE_LENGTH", 100)  
+        self._config["max_episode_length"] = config["Cognition"].getint("MAX_EPISODE_LENGTH", 100)
         self._config["episodic_memory_fixed_prefix_length"] = config["Cognition"].getint("EPISODIC_MEMORY_FIXED_PREFIX_LENGTH", 20)
         self._config["episodic_memory_lookback_length"] = config["Cognition"].getint("EPISODIC_MEMORY_LOOKBACK_LENGTH", 20)
 

@@ -154,11 +154,20 @@ class BaseSemanticGroundingConnector(GroundingConnector):
     def retrieve_relevant(self, relevance_target:str, top_k=20) -> list:
         """
         Retrieves all values from memory that are relevant to a given target.
+
+        Returns:
+            list: Retrieved relevant content with similarity scores
         """
+        # Quick exit if no documents indexed yet
+        if not self.documents or len(self.documents) == 0:
+            logger.debug("No documents in semantic memory, skipping retrieval")
+            return []
+
         # Handle empty or None query
         if not relevance_target or not relevance_target.strip():
+            logger.debug("Empty relevance target, skipping retrieval")
             return []
-            
+
         if self.index is not None:
             retriever = self.index.as_retriever(similarity_top_k=top_k)
             nodes = retriever.retrieve(relevance_target)

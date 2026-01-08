@@ -165,7 +165,10 @@ class TinyPerson(JsonSerializableRegistry):
         
         if not hasattr(self, 'semantic_memory'):
             # This default value MUST NOT be in the method signature, otherwise it will be shared across all instances.
-            self.semantic_memory = SemanticMemory()
+            # Use config values for cache optimization
+            cache_size = config_manager.get("semantic_memory_cache_size", 50)
+            cache_ttl = config_manager.get("semantic_memory_cache_ttl", 300)
+            self.semantic_memory = SemanticMemory(cache_size=cache_size, cache_ttl_seconds=cache_ttl)
         
         # _mental_faculties
         if not hasattr(self, '_mental_faculties'):
@@ -1169,8 +1172,14 @@ max_content_length=max_content_length,
         
         # update relevant memories for the current situation. These are memories that come to mind "spontaneously" when the agent is in a given context,
         # so avoiding the need to actively trying to remember them.
-        current_memory_context = self.retrieve_relevant_memories_for_current_context()
-        self._mental_state["memory_context"] = current_memory_context
+        # Conditionally update relevant memories based on config
+        if config_manager.get("enable_semantic_retrieval", True):
+            current_memory_context = self.retrieve_relevant_memories_for_current_context()
+            self._mental_state["memory_context"] = current_memory_context
+            logger.debug(f"[{self.name}] Retrieved {len(current_memory_context)} relevant memories")
+        else:
+            self._mental_state["memory_context"] = []
+            logger.debug(f"[{self.name}] Semantic memory retrieval disabled by config")
 
         self.reset_prompt()
         
@@ -1233,7 +1242,16 @@ max_content_length=max_content_length,
             self._current_episode_event_count = 0
             logger.debug(f"[{self.name}] Current episode event count reset to 0 after consolidation.")
 
+            # Clear semantic memory cache after adding new memories
+            if hasattr(self.semantic_memory, 'clear_cache'):
+                self.semantic_memory.clear_cache()
+                logger.debug(f"[{self.name}] Cleared semantic memory cache after consolidation")
+
+            return True
+
             # TODO reflections, optimizations, etc.
+
+        return False
 
     def optimize_memory(self):
         pass #TODO
@@ -1267,12 +1285,12 @@ max_content_length=max_content_length,
 
         return relevant
 
-    def retrieve_relevant_memories_for_current_context(self, top_k=7) -> list:
+    def retrieve_relevant_memories_for_current_context(self, top_k=3) -> list:
         """
         Retrieves memories relevant to the current context by combining current state with recent memories.
-        
+
         Args:
-            top_k (int): Number of top relevant memories to retrieve. Defaults to 7.
+            top_k (int): Number of top relevant memories to retrieve. Defaults to 3 (optimized for speed).
             
         Returns:
             list: List of relevant memories for the current context.

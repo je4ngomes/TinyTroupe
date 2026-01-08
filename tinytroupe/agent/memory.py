@@ -415,17 +415,24 @@ class EpisodicMemory(TinyMemory):
 @utils.post_init
 class SemanticMemory(TinyMemory):
     """
-    In Cognitive Psychology, semantic memory is the memory of meanings, understandings, and other concept-based knowledge unrelated to specific 
+    In Cognitive Psychology, semantic memory is the memory of meanings, understandings, and other concept-based knowledge unrelated to specific
     experiences. It is not ordered temporally, and it is not about remembering specific events or episodes. This class provides a simple implementation
     of semantic memory, where the agent can store and retrieve semantic information.
+
+    Includes LRU caching with TTL for improved retrieval performance.
     """
 
     serializable_attributes = ["memories", "semantic_grounding_connector"]
 
-    def __init__(self, memories: list=None) -> None:
+    def __init__(self, memories: list=None, cache_size: int=50, cache_ttl_seconds: int=300) -> None:
         self.memories = memories
-       
+
         self.semantic_grounding_connector = None
+
+        # Cache configuration
+        self._retrieval_cache = {}  # {cache_key: (result, timestamp)}
+        self._cache_max_size = cache_size
+        self._cache_ttl_seconds = cache_ttl_seconds
 
         # @post_init ensures that _post_init is called after the __init__ method
 
@@ -503,12 +510,70 @@ class SemanticMemory(TinyMemory):
         engram_doc = self._build_document_from(value)
         logger.debug(f"Storing engram in semantic memory: {engram_doc}")
         self.semantic_grounding_connector.add_document(engram_doc)
-    
+
+    def _get_cache_key(self, relevance_target: str, top_k: int) -> str:
+        """Generate cache key from query parameters"""
+        import hashlib
+        # Use first 200 chars + top_k for key (balance uniqueness vs memory)
+        key_material = f"{relevance_target[:200]}_{top_k}"
+        return hashlib.md5(key_material.encode()).hexdigest()
+
+    def _is_cache_valid(self, timestamp: float) -> bool:
+        """Check if cached entry is still valid"""
+        import time
+        return time.time() - timestamp < self._cache_ttl_seconds
+
+    def _evict_oldest_cache_entry(self):
+        """Remove oldest entry from cache (LRU)"""
+        if not self._retrieval_cache:
+            return
+        oldest_key = min(self._retrieval_cache.keys(),
+                        key=lambda k: self._retrieval_cache[k][1])
+        del self._retrieval_cache[oldest_key]
+
+    def clear_cache(self):
+        """Clear retrieval cache (call after memory updates)"""
+        self._retrieval_cache.clear()
+        logger.debug("Semantic memory retrieval cache cleared")
+
     def retrieve_relevant(self, relevance_target:str, top_k=20) -> list:
         """
         Retrieves all values from memory that are relevant to a given target.
+        Uses LRU cache with TTL for improved performance.
+
+        Args:
+            relevance_target (str): The query or context to find relevant memories for
+            top_k (int): Number of top relevant memories to retrieve
+
+        Returns:
+            list: Retrieved relevant content with similarity scores
         """
-        return self.semantic_grounding_connector.retrieve_relevant(relevance_target, top_k)
+        import time
+
+        # Generate cache key
+        cache_key = self._get_cache_key(relevance_target, top_k)
+
+        # Check cache
+        if cache_key in self._retrieval_cache:
+            cached_result, timestamp = self._retrieval_cache[cache_key]
+            if self._is_cache_valid(timestamp):
+                logger.debug(f"Cache hit for retrieval query (key: {cache_key[:8]}...)")
+                return cached_result
+            else:
+                logger.debug(f"Cache expired for query (key: {cache_key[:8]}...)")
+                del self._retrieval_cache[cache_key]
+
+        # Perform actual retrieval
+        logger.debug(f"Cache miss, performing semantic retrieval (key: {cache_key[:8]}...)")
+        result = self.semantic_grounding_connector.retrieve_relevant(relevance_target, top_k)
+
+        # Store in cache
+        if len(self._retrieval_cache) >= self._cache_max_size:
+            self._evict_oldest_cache_entry()
+
+        self._retrieval_cache[cache_key] = (result, time.time())
+
+        return result
 
     def retrieve_all(self, item_type:str=None) -> list:
         """
