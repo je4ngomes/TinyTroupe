@@ -588,7 +588,8 @@ class TinyPerson(JsonSerializableRegistry):
         n=None,
         return_actions=False,
         max_content_length=None,
-        communication_display:bool=None
+        communication_display:bool=None,
+        consolidate_memory:bool=True
     ):
         """
         Acts in the environment and updates its internal cognitive state.
@@ -601,6 +602,8 @@ class TinyPerson(JsonSerializableRegistry):
             return_actions (bool): Whether to return the actions or not. Defaults to False.
             max_content_length (int): The maximum length of the content to display. Defaults to None, which uses the global configuration value.
             communication_display (bool): Whether to display the communication or not, will override the global setting if provided. Defaults to None.
+            consolidate_memory (bool): Whether to consolidate episode memories at the end of acting. Defaults to True.
+                Set to False to skip memory consolidation (useful for batching multiple interactions).
         """
 
         # either act until done or act a fixed number of times, but not both
@@ -778,7 +781,8 @@ class TinyPerson(JsonSerializableRegistry):
                 aux_act_once()
 
         # The end of a sequence of actions is always considered to mark the end of an episode.
-        self.consolidate_episode_memories()
+        if consolidate_memory:
+            self.consolidate_episode_memories()
 
         if return_actions:
             return contents
@@ -969,7 +973,8 @@ max_content_length=max_content_length,
         return_actions=False,
         max_content_length=None,
         communication_display:bool=None,
-        media_urls=None
+        media_urls=None,
+        consolidate_memory:bool=True
     ):
         """
         Convenience method that combines the `listen` and `act` methods.
@@ -980,11 +985,14 @@ max_content_length=max_content_length,
             max_content_length (int, optional): The maximum length of the content to display.
             communication_display (bool): Whether to display the communication.
             media_urls (list, optional): List of media URLs with format [{"url": "...", "media_type": "image|video"}]. Defaults to None.
+            consolidate_memory (bool): Whether to consolidate episode memories after acting. Defaults to True.
+                Set to False to skip memory consolidation (useful for batching multiple interactions).
         """
 
         self.listen(speech, max_content_length=max_content_length, communication_display=communication_display, media_urls=media_urls)
         return self.act(
-            return_actions=return_actions, max_content_length=max_content_length, communication_display=communication_display
+            return_actions=return_actions, max_content_length=max_content_length, communication_display=communication_display,
+            consolidate_memory=consolidate_memory
         )
 
     @transactional()
